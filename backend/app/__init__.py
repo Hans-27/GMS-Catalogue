@@ -1,0 +1,1 @@
+"""GMS Catalogue Management API."""

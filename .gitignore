@@ -1,0 +1,58 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.venv/
+
+# Environment and secrets
+.env
+.env.local
+.env.production
+backend/.env
+frontend/.env.local
+frontend/.env.e2e.local
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+*.tsbuildinfo
+frontend/test-results/
+frontend/playwright-report/
+frontend/blob-report/
+
+# Generated backend development logs
+/backend/*.log
+/backend/test_outputs/
+
+# Generated documentation preview screenshots
+/docs/checklist-page-*.png
+/docs/GMS_Catalogue_Platform_Function_Checklist_preview.png
+
+# Editors and operating systems
+.idea/
+.vscode/*
+!.vscode/settings.json
+.DS_Store
+Thumbs.db
+
+# Catalogue uploads
+uploads/
+
+# Local demo runtime data
+.local/
+
+# Agent and generated work artifacts
+.codex/
+.skillquiver/
+artifacts/
+baton-pass.state.json
+baton-pass.config.json
+
+# Backend runtime data (never publish customer uploads or database backups)
+backend/.cache/
+backend/.pytest-tmp-*/
+backend/private_uploads/
+backend/backups/

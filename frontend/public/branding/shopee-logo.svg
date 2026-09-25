@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title">
+  <title id="title">Shopee</title>
+  <defs>
+    <linearGradient id="shopee-orange" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff643d"/>
+      <stop offset="1" stop-color="#ff382c"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="96" fill="url(#shopee-orange)"/>
+  <path fill="#fff" d="M96 157h320a11 11 0 0 1 11 12l-13 238a40 40 0 0 1-40 38H138a40 40 0 0 1-40-38L85 169a11 11 0 0 1 11-12Z"/>
+  <path fill="none" stroke="#fff" stroke-width="23" d="M183 160c0-57 31-94 73-94s73 37 73 94"/>
+  <text x="256" y="365" fill="#ff4a32" font-family="Arial, Helvetica, sans-serif" font-size="196" font-weight="400" text-anchor="middle">S</text>
+</svg>

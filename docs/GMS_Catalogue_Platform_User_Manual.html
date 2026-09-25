@@ -1,0 +1,318 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GMS Catalogue Platform — User Manual</title>
+  <style>
+    @page { size: A4; margin: 16mm 15mm 17mm; @bottom-right { content: "Page " counter(page) " of " counter(pages); color: #64736a; font: 9px Arial; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #17261e; font: 10.5pt/1.48 Arial, sans-serif; }
+    h1, h2, h3 { margin: 0; line-height: 1.18; }
+    h1 { font-size: 30pt; letter-spacing: -1px; }
+    h2 { margin: 0 0 5mm; padding-bottom: 2.5mm; color: #075c32; border-bottom: 1px solid #bcd7c6; font-size: 20pt; break-after: avoid; }
+    h3 { margin: 5mm 0 2mm; color: #153e28; font-size: 13pt; break-after: avoid; }
+    p { margin: 0 0 3mm; }
+    ul, ol { margin: 2mm 0 4mm; padding-left: 6mm; }
+    li { margin: 1.4mm 0; }
+    a { color: #086738; text-decoration: none; }
+    code { padding: 1px 4px; border-radius: 3px; background: #edf4ef; font-size: 9pt; }
+    .cover { min-height: 260mm; padding: 18mm 14mm; display: flex; flex-direction: column; justify-content: space-between; color: white; border-radius: 5mm; background: linear-gradient(145deg, #064d2a, #11814a 62%, #dcefe3); page-break-after: always; }
+    .cover img { width: 43mm; height: 25mm; padding: 3mm; object-fit: contain; border-radius: 3mm; background: white; }
+    .cover .eyebrow { margin-top: 12mm; color: #bde5c9; font-size: 10pt; font-weight: 700; letter-spacing: 1.8px; text-transform: uppercase; }
+    .cover p { max-width: 130mm; margin-top: 7mm; color: #e7f4eb; font-size: 14pt; }
+    .cover footer { display: flex; justify-content: space-between; color: #d5ebdc; font-size: 9pt; }
+    .page { page-break-before: always; }
+    .intro { color: #53645a; font-size: 11pt; }
+    .toc { columns: 2; column-gap: 12mm; padding: 6mm; border: 1px solid #d9e6dd; border-radius: 4mm; background: #f7faf8; }
+    .toc a { display: block; margin: 2.5mm 0; font-weight: 700; }
+    .callout { margin: 4mm 0; padding: 4mm 5mm; border-left: 3px solid #18804a; border-radius: 0 3mm 3mm 0; background: #eef7f1; break-inside: avoid; }
+    .warning { border-left-color: #c17b16; background: #fff7e8; }
+    .danger { border-left-color: #b53d35; background: #fff1f0; }
+    .steps { counter-reset: steps; padding: 0; list-style: none; }
+    .steps li { position: relative; min-height: 9mm; padding: 1mm 0 3mm 11mm; counter-increment: steps; }
+    .steps li::before { content: counter(steps); position: absolute; left: 0; top: 0; width: 7mm; height: 7mm; display: grid; place-items: center; color: white; border-radius: 50%; background: #11733f; font-size: 9pt; font-weight: 700; }
+    table { width: 100%; margin: 3mm 0 5mm; border-collapse: collapse; font-size: 9.5pt; break-inside: avoid; }
+    th, td { padding: 2.5mm 3mm; border: 1px solid #d6e2da; text-align: left; vertical-align: top; }
+    th { color: #16442a; background: #edf5ef; }
+    .workflow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 3mm; margin: 4mm 0; }
+    .workflow div { padding: 4mm; border: 1px solid #d8e4dc; border-radius: 3mm; background: #fafcfb; break-inside: avoid; }
+    .workflow strong { display: block; margin-bottom: 1.5mm; color: #0d6838; }
+    .small { color: #68786f; font-size: 9pt; }
+    .checklist { padding-left: 0; list-style: none; }
+    .checklist li::before { content: "□"; margin-right: 2mm; color: #0d6b39; font-weight: 700; }
+    .section-tag { margin-bottom: 2mm; color: #2b7b4b; font-size: 8pt; font-weight: 800; letter-spacing: 1.2px; text-transform: uppercase; }
+  </style>
+</head>
+<body>
+  <section class="cover">
+    <div>
+      <img src="../frontend/public/branding/gms-corporation-logo-v1.jpg" alt="GMS logo">
+      <div class="eyebrow">G.M.S. Corporation Co., Ltd.</div>
+      <h1>Catalogue Platform<br>User Manual</h1>
+      <p>A task-based guide for managing products, designing catalogues, publishing booklets, running promotions, and administering user access.</p>
+    </div>
+    <footer><span>Version 1.0</span><span>September 2026</span></footer>
+  </section>
+
+  <section>
+    <div class="section-tag">About this manual</div>
+    <h2>Welcome to the GMS Catalogue Platform</h2>
+    <p class="intro">This manual explains the standard workflow from ERP product data to a published digital or PDF catalogue. Menu items are permission-based, so a user may not see every feature shown here.</p>
+    <div class="callout"><strong>Important:</strong> The platform saves Catalogue Studio work automatically, but publishing, access changes, password resets, and certain master-data updates require an explicit button click.</div>
+    <h3>Contents</h3>
+    <nav class="toc">
+      <a href="#access">1. Sign in and navigation</a>
+      <a href="#dashboard">2. Dashboard</a>
+      <a href="#products">3. Products and media</a>
+      <a href="#catalogues">4. Catalogue management</a>
+      <a href="#studio">5. Catalogue Studio</a>
+      <a href="#booklet">6. Booklet preview and sharing</a>
+      <a href="#promotions">7. Promotions</a>
+      <a href="#users">8. Users and passwords</a>
+      <a href="#permissions">9. Roles and permissions</a>
+      <a href="#organization">10. Organization setup</a>
+      <a href="#system">11. System administration</a>
+      <a href="#troubleshooting">12. Troubleshooting</a>
+    </nav>
+    <h3>Roles at a glance</h3>
+    <table>
+      <tr><th>Role type</th><th>Typical responsibilities</th></tr>
+      <tr><td>Catalogue user/editor</td><td>Review assigned products, upload media, and create catalogue pages.</td></tr>
+      <tr><td>Manager/approver</td><td>Review content, approve catalogues or promotions, and publish approved work.</td></tr>
+      <tr><td>Administrator</td><td>Manage master data, users, teams, roles, data synchronization, and platform settings.</td></tr>
+      <tr><td>SuperAdmin</td><td>Manage protected access rules, permission overrides, system health, and recovery operations.</td></tr>
+    </table>
+  </section>
+
+  <section id="access" class="page">
+    <div class="section-tag">Getting started</div>
+    <h2>1. Sign in and navigate</h2>
+    <ol class="steps">
+      <li>Open the platform URL supplied by your administrator.</li>
+      <li>Enter your registered email address and password.</li>
+      <li>Select <strong>Sign in</strong>. The platform opens the first workspace your permissions allow.</li>
+    </ol>
+    <h3>Main navigation</h3>
+    <p>The left sidebar groups destinations into Overview, Catalogue Management, Product Management, Promotions, Organization, Access Control, and System. Select <strong>Collapse</strong> to reduce the sidebar. On mobile, use the menu button to open it.</p>
+    <p>The header search finds products, catalogues, brands, and categories. Press <code>/</code> when no form field is active to focus it. Use arrow keys and Enter to choose a result.</p>
+    <div class="callout"><strong>Security:</strong> Never share an account. Sign out when using a shared computer. Contact an administrator after repeated failed sign-in attempts.</div>
+
+    <h2 id="dashboard">2. Use the dashboard</h2>
+    <p>The dashboard presents only actions and metrics allowed by your role.</p>
+    <div class="workflow">
+      <div><strong>Quick Actions</strong>Start common tasks such as adding products, opening Catalogue Studio, creating promotions, or synchronizing data.</div>
+      <div><strong>Requires Attention</strong>Open filtered queues for missing images, incomplete records, or approval work.</div>
+      <div><strong>My Work</strong>Continue catalogues, promotions, and review tasks assigned to you.</div>
+    </div>
+    <p>Status and synchronization indicators link to details when the user has access. A disabled indicator is informational and does not require action.</p>
+  </section>
+
+  <section id="products" class="page">
+    <div class="section-tag">Product management</div>
+    <h2>3. Manage products and media</h2>
+    <h3>Find and review a product</h3>
+    <ol class="steps">
+      <li>Open <strong>Products</strong> from the sidebar.</li>
+      <li>Search by product name, code, barcode, brand, catalogue, or category. Apply status and quality filters when needed.</li>
+      <li>Select a product row to open its detail panel.</li>
+      <li>Review ERP source information before changing editable catalogue fields.</li>
+      <li>Select <strong>Save draft</strong> or the available workflow action.</li>
+    </ol>
+    <h3>Images and videos</h3>
+    <ul>
+      <li>Upload clear product images with suitable resolution and background.</li>
+      <li>Choose the primary image used by product cards and default catalogue layouts.</li>
+      <li>Use Product Media for centralized image and video management.</li>
+      <li>Videos may be uploaded or linked from an approved external service, depending on permission.</li>
+    </ul>
+    <div class="warning callout"><strong>ERP data:</strong> Source values may be restored by synchronization. Make catalogue-specific presentation changes in the intended editable fields or Catalogue Studio.</div>
+  </section>
+
+  <section id="catalogues" class="page">
+    <div class="section-tag">Catalogue management</div>
+    <h2>4. Create and manage catalogues</h2>
+    <p>Use <strong>All Catalogues</strong> to manage catalogue records, publication status, products, covers, price visibility, and audience links.</p>
+    <h3>Standard workflow</h3>
+    <ol class="steps">
+      <li>Create or select a catalogue.</li>
+      <li>Set its title, brand or brand mode, language, audience, validity dates, and price behavior.</li>
+      <li>Add products and confirm their order.</li>
+      <li>Add a cover and category presentation settings where required.</li>
+      <li>Preview the result and correct missing data or media.</li>
+      <li>Publish only after approval. Copy the appropriate catalogue link for the intended audience.</li>
+    </ol>
+    <table>
+      <tr><th>Status</th><th>Meaning</th></tr>
+      <tr><td>Draft</td><td>Work is editable and not ready for customers.</td></tr>
+      <tr><td>In review</td><td>Submitted for validation or approval.</td></tr>
+      <tr><td>Published</td><td>Approved output is available through its active share link.</td></tr>
+      <tr><td>Archived/Inactive</td><td>Retained for history but removed from the active workflow.</td></tr>
+    </table>
+    <div class="callout"><strong>Booklet without prices:</strong> When no price option is selected, the catalogue card presents one general <em>Catalog</em> link instead of multiple price-level links.</div>
+  </section>
+
+  <section id="studio" class="page">
+    <div class="section-tag">Design workflow</div>
+    <h2>5. Work in Catalogue Studio</h2>
+    <h3>Create a design</h3>
+    <ol class="steps">
+      <li>Open <strong>Catalogue Studio</strong> and choose <strong>New catalogue</strong>.</li>
+      <li>Select a starting point: blank page, A4 blank image page, system template, personal template, or uploaded template.</li>
+      <li>Enter a catalogue name and choose the catalogue type.</li>
+      <li>Select A4 Portrait or A4 Landscape, then open Studio.</li>
+    </ol>
+    <h3>Editor essentials</h3>
+    <table>
+      <tr><th>Area</th><th>Use</th></tr>
+      <tr><td>Elements</td><td>Add text, images, logos, shapes, QR codes, tables, grids, barcodes, page numbers, and product cards.</td></tr>
+      <tr><td>Uploads</td><td>Upload your own images and drag them onto the page or into grid frames.</td></tr>
+      <tr><td>Pages</td><td>Add, duplicate, reorder, and remove catalogue pages.</td></tr>
+      <tr><td>Layers</td><td>Choose overlapping elements and adjust their stacking order.</td></tr>
+      <tr><td>Properties</td><td>Edit the selected element, crop an image, rotate, flip, resize, or replace media.</td></tr>
+    </table>
+    <h3>Image grids</h3>
+    <ol class="steps">
+      <li>Add <strong>Grids</strong> from Elements.</li>
+      <li>Choose the number of rows and columns.</li>
+      <li>Drag an uploaded image into each frame.</li>
+      <li>Select a frame to crop, reposition, rotate, flip, fill, or reset its image.</li>
+      <li>Use the remove-image action when you want to clear the image while keeping the frame.</li>
+    </ol>
+    <div class="callout"><strong>Saving:</strong> Changes save automatically. Use Save version before a major redesign and Save page/catalogue template when the layout should be reused.</div>
+  </section>
+
+  <section id="booklet" class="page">
+    <div class="section-tag">Preview and distribution</div>
+    <h2>6. Preview and share a booklet</h2>
+    <p>Choose <strong>Booklet</strong> in preview to view pages as a publication. Desktop shows a cover or two-page spread where appropriate. Mobile shows one page at a time.</p>
+    <ul>
+      <li>Use the left and right arrows, page thumbnails, keyboard arrows, or swipe gestures.</li>
+      <li>On touch devices, swipe left for the next page and right for the previous page.</li>
+      <li>Use Full screen for the largest reading area.</li>
+      <li>Use Fit or zoom controls when available.</li>
+      <li>Trying to advance after the final page displays a Last Page notification.</li>
+    </ul>
+    <h3>Publish and share</h3>
+    <ol class="steps">
+      <li>Confirm every page in Preview.</li>
+      <li>Publish the catalogue.</li>
+      <li>Open the public catalogue link and verify it matches Preview.</li>
+      <li>Copy the correct audience link or download the PDF.</li>
+      <li>Test the link in a private browser window before sending it externally.</li>
+    </ol>
+    <div class="warning callout"><strong>Audience safety:</strong> Different share links may expose different price levels. Always confirm the audience and price label before sharing.</div>
+  </section>
+
+  <section id="promotions" class="page">
+    <div class="section-tag">Promotion workflow</div>
+    <h2>7. Manage promotions</h2>
+    <ol class="steps">
+      <li>Open <strong>All Promotions</strong> and select the create action.</li>
+      <li>Enter the name, occasion, schedule, products, pricing, and media.</li>
+      <li>Save the draft and review it in Preview.</li>
+      <li>Submit for approval when complete.</li>
+      <li>An authorized approver reviews, rejects, approves, or publishes the promotion.</li>
+    </ol>
+    <p>Use Promotion Calendar to check schedule conflicts and upcoming campaigns. Promotion Approvals contains work awaiting an authorized decision.</p>
+    <div class="callout"><strong>Time zone:</strong> Platform schedules use Asia/Bangkok unless a screen explicitly states otherwise.</div>
+  </section>
+
+  <section id="users" class="page">
+    <div class="section-tag">Account administration</div>
+    <h2>8. Create users and reset passwords</h2>
+    <h3>Create a user</h3>
+    <ol class="steps">
+      <li>Open <strong>Users</strong> under Organization.</li>
+      <li>Select <strong>+ New user</strong>.</li>
+      <li>Enter full name, email address, department, position, optional employee code, team, role, and a temporary password.</li>
+      <li>Select <strong>Create user</strong>. The platform creates its internal username automatically from the email address.</li>
+      <li>Send the temporary password through a secure channel.</li>
+    </ol>
+    <h3>Reset a password</h3>
+    <ol class="steps">
+      <li>Select the user from Platform users.</li>
+      <li>Open <strong>Password and lockout</strong>.</li>
+      <li>Enter a strong replacement password of at least 12 characters, including uppercase, lowercase, number, and symbol.</li>
+      <li>Select <strong>Reset password</strong>. The previous password stops working immediately.</li>
+    </ol>
+    <p>Use Clear lockout after confirming the account owner when failed sign-ins have locked the account.</p>
+  </section>
+
+  <section id="permissions" class="page">
+    <div class="section-tag">Access control</div>
+    <h2>9. Assign roles and permissions</h2>
+    <p>Permissions follow a default-deny model. Users receive access through roles, organization assignments, and explicit overrides.</p>
+    <h3>Role permission matrix</h3>
+    <ol class="steps">
+      <li>Open Organization → Permissions and select a role.</li>
+      <li>Search or expand a module group.</li>
+      <li>Enable individual permissions, or use Select all/Clear within a group.</li>
+      <li>Review the unsaved-change count and select Save permissions.</li>
+    </ol>
+    <h3>User-specific access</h3>
+    <ul>
+      <li>Assign direct roles and global restrictions.</li>
+      <li>Use Select all/Clear all for brands, categories, products, catalogues, and price lists.</li>
+      <li>Add direct exceptions only when a normal role cannot represent the requirement.</li>
+      <li>Review the effective permission simulator before saving.</li>
+      <li>Enter an audit reason. Protected SuperAdmin changes require password confirmation.</li>
+    </ul>
+    <div class="danger callout"><strong>Least privilege:</strong> Do not grant SuperAdmin for convenience. Prefer the smallest role and data scope that allows the user to complete assigned work.</div>
+  </section>
+
+  <section id="organization" class="page">
+    <div class="section-tag">Master data</div>
+    <h2>10. Configure the organization</h2>
+    <p>The Organization workspace groups Departments, Positions, Teams, Brands, and Permissions.</p>
+    <div class="workflow">
+      <div><strong>Departments</strong>Create the organizational hierarchy and active departments.</div>
+      <div><strong>Positions</strong>Associate job positions with departments and levels.</div>
+      <div><strong>Teams</strong>Assign a department and the brands managed by each team.</div>
+      <div><strong>Brands</strong>Maintain brand codes, descriptions, and active status.</div>
+      <div><strong>Permissions</strong>Define permission records and assign them through grouped roles.</div>
+    </div>
+    <p>Create departments and brands before configuring teams and user data scope. Mark obsolete records inactive when history must be preserved.</p>
+  </section>
+
+  <section id="system" class="page">
+    <div class="section-tag">Administration</div>
+    <h2>11. System administration</h2>
+    <h3>Data synchronization</h3>
+    <p>Review the latest ERP synchronization status before manually running a new sync. Confirm product counts, warnings, and the most recent successful completion time.</p>
+    <h3>Backups and system health</h3>
+    <ul>
+      <li>Create or download backups only with appropriate authorization.</li>
+      <li>Review CPU, memory, disk, database, API, and failed-login indicators.</li>
+      <li>Use Audit Logs to investigate sensitive changes and access events.</li>
+      <li>Change ERP or general settings only during an approved maintenance process.</li>
+    </ul>
+    <div class="danger callout"><strong>Do not experiment in production:</strong> Backup, synchronization, settings, and permission changes may affect all users. Record the reason and expected outcome before proceeding.</div>
+  </section>
+
+  <section id="troubleshooting" class="page">
+    <div class="section-tag">Help</div>
+    <h2>12. Troubleshooting and daily checklist</h2>
+    <table>
+      <tr><th>Problem</th><th>What to check</th></tr>
+      <tr><td>A menu or button is missing</td><td>Your role may not include the required permission. Ask an administrator to review effective access.</td></tr>
+      <tr><td>Search shows unexpected text</td><td>Clear the field and refresh. Platform search fields block browser autofill, but an older cached page may require a hard refresh.</td></tr>
+      <tr><td>Product data changed after sync</td><td>The value may be ERP-owned. Confirm whether the field should be changed in ERP or in catalogue presentation data.</td></tr>
+      <tr><td>Image does not fill a frame</td><td>Select the frame and use crop, zoom, position, or Fill frame. Confirm the image finished uploading.</td></tr>
+      <tr><td>Public catalogue differs from Preview</td><td>Save, publish the latest version, refresh the public link, and confirm the correct share token.</td></tr>
+      <tr><td>Reset password is disabled</td><td>Enter a password meeting the minimum length and strength requirements.</td></tr>
+      <tr><td>Export fails</td><td>Confirm pages render in PDF Preview, retry once, then report the catalogue ID and time of failure.</td></tr>
+    </table>
+    <h3>Before publishing</h3>
+    <ul class="checklist">
+      <li>Correct catalogue, brand, language, and audience selected.</li>
+      <li>All pages are ordered correctly and contain no empty unintended frames.</li>
+      <li>Images are sharp, correctly cropped, and licensed for use.</li>
+      <li>Product names, codes, prices, stock, and promotion dates are verified.</li>
+      <li>Desktop, mobile, booklet, fullscreen, and PDF previews are checked as applicable.</li>
+      <li>The correct share link is tested in a private browser window.</li>
+    </ul>
+    <div class="callout"><strong>When reporting a problem:</strong> Include the page URL, catalogue or product ID, expected result, actual result, time of occurrence, browser, and a screenshot. Never include a password.</div>
+    <p class="small">End of manual · GMS Catalogue Platform · Version 1.0</p>
+  </section>
+</body>
+</html>

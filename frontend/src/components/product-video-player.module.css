@@ -1,0 +1,12 @@
+.frame { position: relative; width: 100%; aspect-ratio: 16 / 9; overflow: hidden; border-radius: 14px; background: #07120d; }
+.frame video, .frame iframe { width: 100%; height: 100%; border: 0; object-fit: contain; }
+.unavailable { display: grid; min-height: 220px; place-items: center; padding: 28px; color: #fff; background: #26362f; text-align: center; }
+.backdrop { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 24px; background: rgb(3 22 13 / 76%); }
+.modal { width: min(900px, 100%); max-height: calc(100vh - 48px); overflow: auto; padding: 20px; border-radius: 20px; background: #fff; box-shadow: 0 24px 80px rgb(0 0 0 / 35%); }
+.modal header { display: flex; align-items: start; justify-content: space-between; gap: 20px; margin-bottom: 15px; }
+.modal h2 { margin: 3px 0 0; color: #10271c; }
+.modal small { color: #11723d; font-weight: 800; letter-spacing: .12em; }
+.modal header button { width: 42px; height: 42px; border: 0; border-radius: 12px; font-size: 25px; cursor: pointer; }
+.modal > p { margin: 14px 2px 2px; color: #52645b; line-height: 1.6; }
+@media (max-width: 600px) { .backdrop { padding: 10px; } .modal { padding: 12px; border-radius: 14px; } }
+@media print { .backdrop { display: none !important; } }

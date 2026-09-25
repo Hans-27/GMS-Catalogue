@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>GMS Catalogue Platform — New Chat Handoff</title>
+  <style>
+    @page { size: A4; margin: 16mm; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: #183126; font: 10pt/1.45 Arial, sans-serif; }
+    h1 { margin: 0; color: #0b6035; font-size: 24pt; letter-spacing: -.5px; }
+    h2 { margin: 20px 0 7px; padding-bottom: 4px; border-bottom: 1px solid #cfe0d5; color: #0f6b3a; font-size: 14pt; }
+    h3 { margin: 12px 0 4px; font-size: 11pt; }
+    p { margin: 5px 0; }
+    ul { margin: 5px 0 9px; padding-left: 19px; }
+    li { margin: 2px 0; }
+    code { padding: 1px 4px; border-radius: 3px; color: #17492e; background: #edf6f0; font: 8.5pt Consolas, monospace; }
+    pre { padding: 10px; overflow-wrap: anywhere; border: 1px solid #d7e4db; border-radius: 6px; background: #f5f9f6; white-space: pre-wrap; font: 8.5pt/1.4 Consolas, monospace; }
+    .cover { min-height: 235mm; display: flex; flex-direction: column; justify-content: center; page-break-after: always; }
+    .badge { width: fit-content; margin-bottom: 16px; padding: 5px 10px; border-radius: 20px; color: #0b6035; background: #e1f3e7; font-size: 8pt; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+    .subtitle { max-width: 145mm; margin-top: 12px; color: #62766a; font-size: 14pt; }
+    .meta { margin-top: 35px; padding: 14px; border-left: 4px solid #17804a; background: #f1f8f3; }
+    .note { padding: 10px 12px; border: 1px solid #cfe3d5; border-radius: 6px; background: #f4faf6; }
+    section { break-inside: avoid; }
+    footer { position: fixed; right: 0; bottom: -10mm; left: 0; color: #7c8d83; font-size: 7.5pt; text-align: center; }
+  </style>
+</head>
+<body>
+  <footer>GMS Catalogue Platform · Development Handoff · 5 September 2026</footer>
+  <div class="cover">
+    <span class="badge">Development handoff</span>
+    <h1>GMS Catalogue Platform</h1>
+    <p class="subtitle">Complete context for continuing the project in a new Codex chat.</p>
+    <div class="meta"><strong>Workspace</strong><br><code>C:\Project GMS\catalogue-main</code><br><br><strong>Environment</strong><br>Development · Asia/Bangkok · 5 September 2026</div>
+  </div>
+
+  <h2>1. Project and scope</h2>
+  <ul><li>Frontend: Next.js 16, React and TypeScript.</li><li>Backend: Python API.</li><li>Local frontend: <code>http://127.0.0.1:3000</code>.</li><li>Current mode: Development.</li></ul>
+  <p>The platform manages ERP products, brands, categories, stock and prices; catalogues and share links; Catalogue Studio designs and PDF exports; promotions; users, roles and permissions; organization structure; ERP synchronization; audit logs, backups and system health.</p>
+  <div class="note">Preserve permission restrictions and use real API data. Do not add visible actions without working behavior.</div>
+
+  <h2>2. Catalogue management</h2>
+  <p><code>/dashboard?view=catalogues</code></p>
+  <ul>
+    <li>Redesigned catalogue library with compact status cards, tabs, filters and a four-column desktop grid.</li>
+    <li>All Catalogues, Recently Updated and Most Products are mutually exclusive. Each preset clears conflicting status filters and applies its correct sort.</li>
+    <li>Cards display a brand cover/logo. Uploaded images use <code>object-fit: contain</code> so the complete logo remains visible.</li>
+    <li>Removed “Copy” from audience-link labels. Audience/price links respect permissions and selected price configuration.</li>
+    <li>Use one general catalogue link where price variations do not apply.</li>
+    <li>Responsive tablet and mobile layouts are included.</li>
+  </ul>
+  <p><strong>Files:</strong> <code>frontend/src/app/dashboard/catalogue-management.tsx</code>, <code>dashboard.module.css</code>, and <code>catalogue-management.test.tsx</code>.</p>
+  <p><strong>Last focused result:</strong> 19/19 catalogue tests passed.</p>
+
+  <h2>3. Dashboard overview</h2>
+  <p><code>/dashboard</code></p>
+  <ul>
+    <li>Compact personalized greeting and synchronization status.</li>
+    <li>Horizontal, permission-aware quick actions.</li>
+    <li>Six operational counters, product readiness chart, catalogue status and stock/price synchronization panels.</li>
+    <li>Work and attention queues, recent catalogues/products/promotions and permission-gated system health.</li>
+    <li>Responsive mobile and tablet layouts.</li>
+    <li>“Products Requiring Attention” replaces inactive products when attention data exists.</li>
+    <li>Product readiness uses <code>product_metrics.completion_rate</code>; synchronization runs through the existing callback.</li>
+  </ul>
+  <p><strong>Files:</strong> <code>frontend/src/app/dashboard/dashboard-overview.tsx</code>, <code>dashboard.module.css</code>, and <code>dashboard-overview.test.tsx</code>.</p>
+  <p><strong>Validation:</strong> 2/2 focused tests passed; TypeScript compilation passed.</p>
+
+  <h2>4. Users, organization and permissions</h2>
+  <ul>
+    <li>Pages: <code>?view=users</code>, <code>?view=organization</code>, Permission Matrix and User Access.</li>
+    <li>New-user workflow, password creation/reset controls and searchable user directory.</li>
+    <li>Username removed from the visible form and unwanted search autofill removed.</li>
+    <li>Permissions grouped by module and displayed as collapsible sections.</li>
+    <li>Select-all controls for permission and scope categories.</li>
+    <li>Department-by-brand access includes row-level bulk changes.</li>
+    <li><code>design_media.view</code> was specifically requested.</li>
+  </ul>
+  <div class="note">Before changing access logic, preserve role inheritance and the direct grant/deny precedence rules.</div>
+
+  <h2>5. Catalogue Studio and booklet preview</h2>
+  <ul>
+    <li>Mobile booklet: one page at a time, swipe left/right, with the page behind visible during page turns.</li>
+    <li>Keep Studio, authenticated preview, public share view and exported PDF geometry consistent.</li>
+    <li>Avoid nested interactive elements such as a button inside another button.</li>
+    <li>PDF export must preserve authentication and correctly render price fields at their exact Studio positions.</li>
+    <li>Authorized ERP price level <code>SP1</code> must display.</li>
+    <li>Product selectors must show Product Master names, not carousel-layer names.</li>
+    <li>Catalogue creation uses a guided three-step workflow.</li>
+    <li>Template import should offer a user-friendly file format instead of exposing JSON as the primary choice.</li>
+  </ul>
+  <p>Retest all rendering, export and mobile interactions before release.</p>
+
+  <h2>6. ERP synchronization</h2>
+  <p>Automatic synchronization is configured for <strong>180 seconds (3 minutes)</strong> in development and production.</p>
+  <ul><li><code>backend/app/config.py</code></li><li><code>backend/.env</code> and <code>backend/.env.example</code></li><li><code>docker-compose.yml</code> and <code>docker-compose.production.yml</code></li><li>Worker: <code>backend/app/workers/product_sync_worker.py</code></li></ul>
+  <p>Restart any active backend worker/container after configuration changes.</p>
+
+  <h2>7. Verification commands</h2>
+  <pre>cd "C:\Project GMS\catalogue-main\frontend"
+npm.cmd test -- --run src/app/dashboard/dashboard-overview.test.tsx
+npm.cmd test -- --run src/app/dashboard/catalogue-management.test.tsx
+npm.cmd exec tsc -- --noEmit</pre>
+  <p>The project does not currently define an <code>npm run typecheck</code> script. Run <code>npm.cmd run</code> to inspect other available scripts before broader release verification.</p>
+
+  <h2>8. Working rules</h2>
+  <ul>
+    <li>Preserve unrelated user changes and inspect the worktree before editing.</li>
+    <li>Use <code>rg</code> for searches and <code>apply_patch</code> for source edits.</li>
+    <li>Do not remove code merely because it appears unused without checking references.</li>
+    <li>Avoid destructive Git commands.</li>
+    <li>Keep every action permission-aware and backed by real data.</li>
+    <li>Verify desktop and mobile layouts and ensure every visible action works.</li>
+  </ul>
+
+  <h2>9. Suggested opening prompt</h2>
+  <div class="note">Continue development in <code>C:\Project GMS\catalogue-main</code>. Read this handoff and inspect the current worktree without overwriting unrelated changes. Verify the dashboard and catalogue changes, then run the focused tests and TypeScript compilation. Automatic ERP synchronization must remain set to 180 seconds. Continue from the existing implementation and report any failures before making broader release changes.</div>
+</body>
+</html>

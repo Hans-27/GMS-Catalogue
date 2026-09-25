@@ -1,0 +1,157 @@
+.backdrop {
+  position: fixed;
+  z-index: 1200;
+  inset: 0;
+  padding: 24px;
+  display: grid;
+  place-items: center;
+  background: rgb(5 25 15 / 74%);
+  backdrop-filter: blur(2px);
+}
+
+.dialog {
+  width: min(820px, 94vw);
+  max-height: calc(100svh - 48px);
+  padding: 22px;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto auto auto;
+  gap: 12px;
+  overflow: hidden;
+  border: 1px solid #d2e1d7;
+  border-radius: 18px;
+  color: #10291b;
+  background: #fff;
+  box-shadow: 0 24px 70px rgb(0 0 0 / 35%);
+}
+
+.dialog header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.dialog header small {
+  color: #157643;
+  font-size: 10px;
+  font-weight: 900;
+  letter-spacing: 0.12em;
+}
+
+.dialog h2 {
+  margin: 4px 0 0;
+  font-size: clamp(18px, 2.4vw, 26px);
+  line-height: 1.2;
+}
+
+.close {
+  flex: none;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #d2e1d7;
+  border-radius: 50%;
+  color: #143923;
+  background: #f2f7f4;
+  font-size: 25px;
+  cursor: pointer;
+}
+
+.imageStage {
+  min-height: 260px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 12px;
+  background: #f5f8f6;
+}
+
+.imageStage img {
+  width: 100%;
+  height: 100%;
+  max-height: 65svh;
+  object-fit: contain;
+}
+
+.position,
+.error {
+  margin: 0;
+  text-align: center;
+}
+
+.position {
+  color: #607267;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.error {
+  color: #a22020;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.dialog footer {
+  display: grid;
+  grid-template-columns: 1fr minmax(170px, auto) 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.dialog footer button {
+  min-height: 44px;
+  padding: 10px 14px;
+  border: 1px solid #bad1c2;
+  border-radius: 9px;
+  color: #0b6337;
+  background: #fff;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dialog footer button:last-child {
+  justify-self: stretch;
+}
+
+.dialog footer button:disabled {
+  color: #78877e;
+  background: #edf1ee;
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.dialog footer .download {
+  color: #fff;
+  background: #126b3a;
+  box-shadow: 0 7px 16px rgb(18 107 58 / 20%);
+}
+
+.dialog button:focus-visible {
+  outline: 3px solid #59bd84;
+  outline-offset: 2px;
+}
+
+@media (max-width: 620px) {
+  .backdrop { padding: max(8px,var(--safe-left)); }
+  .dialog {
+    width: 100%;
+    max-height: calc(100dvh - 16px);
+    padding: 14px;
+  }
+  .imageStage { min-height: 180px; max-height:55dvh; }
+  .dialog footer { grid-template-columns: 1fr 1fr; }
+  .dialog footer .download {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+}
+
+@media print {
+  .backdrop { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop { backdrop-filter: none; }
+}
