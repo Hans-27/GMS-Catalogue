@@ -1,0 +1,182 @@
+.control {
+  display: inline-flex;
+  justify-self: end;
+  align-items: center;
+  gap: 7px;
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid #d3dfd7;
+  border-radius: 999px;
+  background: #fff;
+  color: #66746c;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition: border-color 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.control[aria-checked="true"] {
+  border-color: #a9d2b8;
+  color: #176536;
+}
+
+.control:focus-visible {
+  outline: 3px solid rgba(35, 119, 71, 0.28);
+  outline-offset: 2px;
+}
+
+.control:disabled {
+  cursor: wait;
+  opacity: 0.62;
+}
+
+.track {
+  position: relative;
+  width: 28px;
+  height: 16px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #b9c4bd;
+  transition: background-color 160ms ease;
+}
+
+.track > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 37, 26, 0.25);
+  transition: transform 160ms ease;
+}
+
+.control[aria-checked="true"] .track {
+  background: #1d7c47;
+}
+
+.control[aria-checked="true"] .track > span {
+  transform: translateX(12px);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(8, 29, 19, 0.48);
+}
+
+.dialog {
+  width: min(440px, 100%);
+  padding: 24px;
+  border: 1px solid #dce6df;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 25px 70px rgba(8, 29, 19, 0.28);
+}
+
+.eyebrow {
+  color: #176536;
+  font-size: 0.68rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.dialog h3 {
+  margin: 7px 0;
+  color: #10251a;
+  font-size: 1.2rem;
+}
+
+.dialog p {
+  margin: 0 0 18px;
+  color: #68776e;
+  font-size: 0.82rem;
+  line-height: 1.55;
+}
+
+.dialog label {
+  display: grid;
+  gap: 7px;
+  color: #34473b;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.dialog textarea {
+  width: 100%;
+  min-height: 92px;
+  padding: 10px 11px;
+  resize: vertical;
+  border: 1px solid #d6e0d9;
+  border-radius: 9px;
+  color: #23352a;
+  background: #fff;
+  font: inherit;
+}
+
+.dialog textarea:focus {
+  outline: 3px solid rgba(35, 119, 71, 0.18);
+  border-color: #237747;
+}
+
+.error {
+  margin-top: 10px;
+  color: #932f27;
+  font-size: 0.75rem;
+}
+
+.dialog footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 20px;
+}
+
+.dialog footer button {
+  min-height: 36px;
+  padding: 0 15px;
+  border: 1px solid #d6e0d9;
+  border-radius: 8px;
+  color: #35473c;
+  background: #fff;
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.dialog footer button:last-child {
+  border-color: #176536;
+  color: #fff;
+  background: #176536;
+}
+
+.dialog footer button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .control,
+  .track,
+  .track > span {
+    transition: none;
+  }
+}

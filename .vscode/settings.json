@@ -1,0 +1,46 @@
+{
+  "explorer.compactFolders": true,
+  "explorer.fileNesting.enabled": true,
+  "explorer.fileNesting.expand": false,
+  "explorer.fileNesting.patterns": {
+    "*.tsx": "${capture}.test.tsx, ${capture}.module.css",
+    "*.ts": "${capture}.test.ts, ${capture}.d.ts, ${capture}.js, ${capture}.js.map",
+    "page.tsx": "page.*.test.tsx",
+    "package.json": "package-lock.json, npm-shrinkwrap.json",
+    "pyproject.toml": "requirements*.txt, pytest.ini, ruff.toml",
+    ".env.example": ".env, .env.*"
+  },
+  "files.exclude": {
+    "**/.codex": true,
+    "**/.local": true,
+    "**/.next": true,
+    "**/.pytest_cache": true,
+    "**/.ruff_cache": true,
+    "**/.skillquiver": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/node_modules": true,
+    "artifacts": true,
+    "private_uploads": true,
+    "uploads": true,
+    "backend/private_uploads": true,
+    "backend/uploads": true,
+    "frontend/blob-report": true,
+    "frontend/playwright-report": true,
+    "frontend/test-results": true
+  },
+  "search.exclude": {
+    "**/.next": true,
+    "**/.venv": true,
+    "**/__pycache__": true,
+    "**/node_modules": true,
+    "artifacts": true,
+    "private_uploads": true,
+    "uploads": true,
+    "backend/private_uploads": true,
+    "backend/uploads": true,
+    "frontend/blob-report": true,
+    "frontend/playwright-report": true,
+    "frontend/test-results": true
+  }
+}

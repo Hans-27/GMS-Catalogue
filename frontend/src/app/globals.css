@@ -1,0 +1,138 @@
+@import "./tailadmin-theme.css";
+
+:root {
+  --ink: #17251f;
+  --muted: #67746e;
+  --line: #dfe7e2;
+  --surface: var(--admin-surface);
+  --canvas: var(--admin-canvas);
+  --brand: #166534;
+  --brand-dark: #0e4a25;
+  --accent: #dff3e5;
+  --error: #b42318;
+  --error-bg: #fff0ef;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+.languageSwitcher {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid rgba(15, 76, 47, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 7px 20px rgba(20, 54, 37, 0.08);
+}
+
+.languageSwitcher button {
+  min-width: 42px;
+  height: 32px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: #526157;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.languageSwitcher button[data-active="true"] {
+  background: #126b3a;
+  color: #fff;
+}
+
+.authLanguageSwitcher {
+  position: absolute;
+  top: 24px;
+  right: 28px;
+  z-index: 4;
+}
+
+@media (max-width: 720px) {
+  .languageSwitcher button {
+    min-width: 44px;
+    height: 44px;
+  }
+
+  .authLanguageSwitcher {
+    top: 16px;
+    right: 16px;
+  }
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background: var(--canvas);
+  font-family:
+    Inter, Aptos, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+}
+
+::selection {
+  background: #b8e0c3;
+}
+html {
+  min-width: 320px;
+  overflow-x: clip;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+}
+
+img, video, canvas, svg {
+  max-width: 100%;
+}
+
+:root {
+  --mobile-touch-target: 44px;
+  --mobile-page-gutter: 16px;
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+}
+
+@media (max-width: 760px) {
+  button,
+  [role="button"],
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea {
+    min-height: var(--mobile-touch-target);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
+}

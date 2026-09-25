@@ -1,0 +1,148 @@
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "5"
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: catalogue_management
+      POSTGRES_USER: catalogue_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}
+    volumes:
+      - catalogue_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catalogue_user -d catalogue_management"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - catalogue_internal
+    logging: *default-logging
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://catalogue_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}@postgres:5432/catalogue_management
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env.production}
+      AUTO_CREATE_TABLES: "false"
+      SEED_DEMO_DATA: "false"
+      DEMO_MODE: "false"
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS in .env.production}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?Set PUBLIC_APP_URL in .env.production}
+      DESIGN_EXPORT_WORKER_ENABLED: "true"
+      PRODUCT_SYNC_ENABLED: "false"
+      CATALOGUE_CHROME_PATH: /usr/bin/chromium
+      UPLOAD_DIR: /app/uploads
+      COVER_UPLOAD_DIR: /app/private_uploads/catalogue-covers
+      PRODUCT_VIDEO_UPLOAD_DIR: /app/private_uploads/product-videos
+      CATALOGUE_PDF_CACHE_DIR: /app/.cache/catalogue-pdfs
+      BACKUP_DIR: /app/backups
+      APPLICATION_ROOT: /app
+      PG_DUMP_PATH: /usr/bin/pg_dump
+      ENABLE_BACKUP_RESTORE: "false"
+    command: >-
+      sh -c "python -m alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000 --proxy-headers --forwarded-allow-ips='*'"
+    volumes:
+      - catalogue_uploads:/app/uploads
+      - catalogue_private_uploads:/app/private_uploads
+      - catalogue_pdf_cache:/app/.cache/catalogue-pdfs
+      - catalogue_backups:/app/backups
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - catalogue_internal
+      - catalogue_web
+    logging: *default-logging
+    stop_grace_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+        INTERNAL_API_URL: http://backend:8000/api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-/api}
+      INTERNAL_API_URL: http://backend:8000/api
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "${APP_BIND_ADDRESS:-127.0.0.1}:${APP_PORT:-3000}:3000"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/login').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    networks:
+      - catalogue_web
+    logging: *default-logging
+    stop_grace_period: 30s
+
+  product-sync-worker:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      APP_ENV: production
+      DATABASE_URL: postgresql+psycopg://catalogue_user:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env.production}@postgres:5432/catalogue_management
+      SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env.production}
+      AUTO_CREATE_TABLES: "false"
+      SEED_DEMO_DATA: "false"
+      DEMO_MODE: "false"
+      COOKIE_SECURE: "true"
+      CORS_ORIGINS: ${CORS_ORIGINS:?Set CORS_ORIGINS in .env.production}
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?Set PUBLIC_APP_URL in .env.production}
+      PRODUCT_SYNC_ENABLED: "true"
+      PRODUCT_SYNC_INTERVAL_SECONDS: "180"
+      PRODUCT_SYNC_BATCH_SIZE: "500"
+      PRODUCT_SYNC_SOURCE: MSSQL
+      PRODUCT_SYNC_TIMEZONE: Asia/Bangkok
+      UPLOAD_DIR: /app/uploads
+    command: python -m app.workers.product_sync_worker
+    volumes:
+      - catalogue_uploads:/app/uploads
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - catalogue_internal
+      - catalogue_egress
+    logging: *default-logging
+    stop_grace_period: 30s
+
+volumes:
+  catalogue_postgres_data:
+  catalogue_uploads:
+  catalogue_private_uploads:
+  catalogue_pdf_cache:
+  catalogue_backups:
+
+networks:
+  catalogue_internal:
+    internal: true
+  catalogue_web:
+  catalogue_egress:

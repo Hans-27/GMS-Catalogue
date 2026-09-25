@@ -1,0 +1,22 @@
+.logo {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.compact {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.fallback {
+  display: grid;
+  place-items: center;
+  color: #0f5b2b;
+  background: #f4faf5;
+  font-weight: 850;
+  letter-spacing: -0.04em;
+}
+

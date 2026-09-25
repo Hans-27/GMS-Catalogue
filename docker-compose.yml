@@ -1,0 +1,84 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: catalogue_management
+      POSTGRES_USER: catalogue_user
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-catalogue_local_password}
+    volumes:
+      - catalogue_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U catalogue_user -d catalogue_management"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    ports:
+      - "5432:5432"
+
+  backend:
+    build: ./backend
+    environment:
+      DATABASE_URL: postgresql+psycopg://catalogue_user:${POSTGRES_PASSWORD:-catalogue_local_password}@postgres:5432/catalogue_management
+      SECRET_KEY: ${SECRET_KEY:-replace-this-local-compose-secret}
+      AUTO_CREATE_TABLES: "false"
+      SEED_DEMO_DATA: "true"
+      CORS_ORIGINS: http://localhost,http://127.0.0.1
+      PUBLIC_APP_URL: ${PUBLIC_APP_URL:-http://localhost}
+      UPLOAD_DIR: /app/uploads
+      COVER_UPLOAD_DIR: /app/private_uploads/catalogue-covers
+      BACKUP_DIR: /app/backups
+      APPLICATION_ROOT: /workspace
+      PG_DUMP_PATH: /usr/bin/pg_dump
+      ENABLE_BACKUP_RESTORE: "false"
+      DEMO_VERSION: demo-0.2.0
+    command: >-
+      sh -c "python -m alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000"
+    volumes:
+      - catalogue_uploads:/app/uploads
+      - catalogue_cover_uploads:/app/private_uploads
+      - catalogue_backups:/app/backups
+      - ./:/workspace:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        NEXT_PUBLIC_API_URL: /api
+        INTERNAL_API_URL: http://backend:8000/api
+    environment:
+      NEXT_PUBLIC_API_URL: /api
+      INTERNAL_API_URL: http://backend:8000/api
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+  product-sync-worker:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql+psycopg://catalogue_user:${POSTGRES_PASSWORD:-catalogue_local_password}@postgres:5432/catalogue_management
+      SECRET_KEY: ${SECRET_KEY:-replace-this-local-compose-secret}
+      AUTO_CREATE_TABLES: "false"
+      SEED_DEMO_DATA: "false"
+      PRODUCT_SYNC_ENABLED: "true"
+      PRODUCT_SYNC_INTERVAL_SECONDS: "180"
+      PRODUCT_SYNC_BATCH_SIZE: "500"
+      PRODUCT_SYNC_SOURCE: MSSQL
+      PRODUCT_SYNC_TIMEZONE: Asia/Bangkok
+    command: python -m app.workers.product_sync_worker
+    depends_on:
+      backend:
+        condition: service_started
+
+volumes:
+  catalogue_postgres_data:
+  catalogue_uploads:
+  catalogue_cover_uploads:
+  catalogue_backups:

@@ -1,0 +1,297 @@
+.search {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 44px;
+  margin: 0 22px 14px;
+  padding: 0 14px;
+  border: 1px solid #d3dfd7;
+  border-radius: 12px;
+  background: #fff;
+  color: #426250;
+}
+
+.search:focus-within {
+  border-color: #237747;
+  box-shadow: 0 0 0 3px rgba(35, 119, 71, 0.13);
+}
+
+.search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #10251a;
+  font: inherit;
+}
+
+.list {
+  border-top: 1px solid #e2eae5;
+}
+
+.brandGroup + .brandGroup {
+  border-top: 1px solid #e2eae5;
+}
+
+.brandHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 22px 10px;
+}
+
+.brandHeading {
+  min-width: 0;
+}
+
+.brandGroup h4 {
+  margin: 0;
+}
+
+.brandDisclosure {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  padding: 5px 8px 5px 0;
+  border: 0;
+  background: transparent;
+  color: #123d26;
+  font: inherit;
+  font-size: 0.88rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.brandDisclosure:hover {
+  color: #176536;
+}
+
+.brandChevron {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 auto;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.8;
+  transition: transform 160ms ease;
+}
+
+.brandGroup[data-expanded="true"] .brandChevron {
+  transform: rotate(180deg);
+}
+
+.brandHeader small,
+.disabledReason {
+  display: block;
+  margin-top: 4px;
+  overflow: hidden;
+  color: #8a4a43;
+  font-size: 0.68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rows {
+  display: grid;
+  animation: revealRows 160ms ease-out;
+}
+
+@keyframes revealRows {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 0 22px;
+  border-top: 1px solid #edf2ef;
+  background: #fff;
+}
+
+.row[data-active="false"] {
+  background: #fafcfb;
+}
+
+.mainAction {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 13px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mainAction:hover strong {
+  color: #176536;
+}
+
+.categoryIcon {
+  display: grid;
+  width: 42px;
+  height: 42px;
+  place-items: center;
+  border: 1px solid #cddfd3;
+  border-radius: 11px;
+  background: #eef6f1;
+  color: #176536;
+  font-size: 0.72rem;
+  font-weight: 850;
+}
+
+.categoryCopy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.categoryCopy strong,
+.categoryCopy small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.categoryCopy strong {
+  color: #10251a;
+  font-size: 0.85rem;
+}
+
+.categoryCopy small,
+.productCount {
+  color: #68776e;
+  font-size: 0.72rem;
+}
+
+.productCount {
+  white-space: nowrap;
+}
+
+.statusToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+  min-height: 36px;
+  padding: 6px 9px;
+  border: 1px solid #d3dfd7;
+  border-radius: 999px;
+  background: #fff;
+  color: #66746c;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.statusToggle[aria-checked="true"] {
+  border-color: #a9d2b8;
+  color: #176536;
+}
+
+.statusToggle:disabled {
+  cursor: wait;
+  opacity: 0.66;
+}
+
+.switchTrack {
+  position: relative;
+  width: 30px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 999px;
+  background: #b9c4bd;
+  transition: background-color 160ms ease;
+}
+
+.switchTrack > span {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(16, 37, 26, 0.25);
+  transition: transform 160ms ease;
+}
+
+.statusToggle[aria-checked="true"] .switchTrack {
+  background: #1d7c47;
+}
+
+.statusToggle[aria-checked="true"] .switchTrack > span {
+  transform: translateX(12px);
+}
+
+.brandDisclosure:focus-visible,
+.mainAction:focus-visible,
+.statusToggle:focus-visible {
+  outline: 3px solid rgba(35, 119, 71, 0.28);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .search {
+    margin-right: 16px;
+    margin-left: 16px;
+  }
+
+  .brandHeader {
+    padding-right: 16px;
+    padding-left: 16px;
+  }
+
+  .row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+    padding: 0 16px 12px;
+  }
+
+  .mainAction {
+    grid-template-columns: 38px minmax(0, 1fr);
+  }
+
+  .categoryIcon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .productCount {
+    grid-column: 2;
+  }
+
+  .statusToggle {
+    justify-self: end;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brandChevron,
+  .rows,
+  .switchTrack,
+  .switchTrack > span {
+    animation: none;
+    transition: none;
+  }
+}

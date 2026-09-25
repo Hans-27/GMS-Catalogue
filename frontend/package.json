@@ -1,0 +1,48 @@
+{
+  "name": "gms-catalogue-frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -H 0.0.0.0 -p 3000",
+    "dev:turbopack": "next dev -H 0.0.0.0 -p 3000",
+    "dev:webpack": "next dev --webpack -H 0.0.0.0 -p 3000",
+    "build": "next build",
+    "start": "next start -H 0.0.0.0 -p 3000",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:ui-overlap": "playwright test --config playwright.overlap.config.ts",
+    "test:ui-overlap:tracer": "playwright test --config playwright.overlap.config.ts --grep @tracer"
+  },
+  "dependencies": {
+    "html-to-image": "^1.11.13",
+    "konva": "^10.0.12",
+    "next": "16.3.6",
+    "postcss": "8.5.25",
+    "qrcode": "^1.5.4",
+    "react": "19.1.0",
+    "react-dom": "19.1.0",
+    "react-konva": "^19.0.10",
+    "sharp": "0.35.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@testing-library/jest-dom": "^7.0.0",
+    "@testing-library/react": "^16.3.2",
+    "@types/node": "24.1.0",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "19.1.9",
+    "@types/react-dom": "19.1.7",
+    "eslint": "9.39.5",
+    "eslint-config-next": "16.3.6",
+    "jsdom": "^30.0.1",
+    "typescript": "5.8.3",
+    "vitest": "^4.1.10"
+  },
+  "overrides": {
+    "nanoid": "3.3.19",
+    "next": {
+      "postcss": "$postcss",
+      "sharp": "$sharp"
+    }
+  }
+}

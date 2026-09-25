@@ -1,0 +1,31 @@
+.link {
+  transform: translateY(0);
+  transition: transform 200ms cubic-bezier(.2,.75,.25,1), box-shadow 200ms ease, filter 200ms ease;
+}
+
+a.link:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+  box-shadow: 0 8px 18px rgba(10,78,39,.18);
+}
+
+a.link:active {
+  transform: translateY(0);
+  filter: brightness(.98);
+  box-shadow: 0 3px 8px rgba(10,78,39,.14);
+}
+
+a.link:focus-visible {
+  outline: 3px solid #fff;
+  outline-offset: 3px;
+  box-shadow: 0 0 0 6px #126b3a;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .link,
+  a.link:hover,
+  a.link:active {
+    transform: none;
+    transition: none;
+  }
+}
