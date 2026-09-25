@@ -40,6 +40,7 @@ Thumbs.db
 
 # Catalogue uploads
 uploads/
+/private_uploads/
 
 # Local demo runtime data
 .local/
@@ -48,6 +49,7 @@ uploads/
 .codex/
 .skillquiver/
 artifacts/
+.restore-work/
 baton-pass.state.json
 baton-pass.config.json
 
