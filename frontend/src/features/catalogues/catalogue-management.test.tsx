@@ -23,6 +23,8 @@ const mocks = vi.hoisted(() => ({
   getCatalogueOnlineLinks: vi.fn(),
   getCatalogue: vi.fn(),
   getCatalogueVersions: vi.fn(),
+  publishCatalogue: vi.fn(),
+  unpublishCatalogue: vi.fn(),
   createCatalogue: vi.fn(),
   deleteCatalogue: vi.fn(),
   generateErpBrandCatalogues: vi.fn(),
@@ -49,7 +51,8 @@ vi.mock("@/lib/api", () => ({
   duplicateCatalogue: vi.fn(),
   getCatalogue: mocks.getCatalogue,
   getCatalogueVersions: mocks.getCatalogueVersions,
-  publishCatalogue: vi.fn(),
+  publishCatalogue: mocks.publishCatalogue,
+  unpublishCatalogue: mocks.unpublishCatalogue,
   setCatalogueProducts: vi.fn(),
   updateCatalogue: vi.fn(),
 }));
@@ -72,6 +75,7 @@ const catalogue = {
   valid_from: null,
   valid_until: null,
   is_public: false,
+  public_access_enabled: true,
   owner_id: null,
   product_count: 12,
   products: [],
@@ -95,6 +99,7 @@ const draftCatalogue = {
   title: "Work in Progress Catalogue",
   slug: "work-in-progress-catalogue",
   status: "draft" as const,
+  public_access_enabled: false,
   published_at: null,
 };
 
@@ -130,6 +135,13 @@ describe("catalogueCardShareLinks", () => {
     audience_code: "no_price",
     show_prices: false,
   } as never;
+  const vvipLink = {
+    id: "vvip",
+    audience_code: "vvip",
+    audience_name: "VVIP",
+    price_list_name: "SP7",
+    show_prices: true,
+  } as never;
 
   it("shows only one no-price link for an unpriced booklet", () => {
     expect(catalogueCardShareLinks(
@@ -148,6 +160,18 @@ describe("catalogueCardShareLinks", () => {
       [vipLink, noPriceLink, normalLink],
     )).toEqual([normalLink, noPriceLink]);
   });
+
+  it.each(["GLINK", "GLINK-CCTV1", "LUMIRA", "LUMIRA SOLAR"])(
+    "adds the SP7 VVIP link for the %s brand family",
+    (brand) => {
+      // Production defect: GLINK and LUMIRA cards hide the existing VVIP/SP7
+      // audience link, leaving only the normal and no-price choices.
+      expect(catalogueCardShareLinks(
+        { catalogue_type: "standard", show_prices: true, brand },
+        [vvipLink, noPriceLink, normalLink],
+      )).toEqual([normalLink, vvipLink, noPriceLink]);
+    },
+  );
 });
 
 describe("CatalogueManagement preview action", () => {
@@ -169,6 +193,20 @@ describe("CatalogueManagement preview action", () => {
     mocks.getCatalogueOnlineLinks.mockResolvedValue({});
     mocks.getCatalogue.mockResolvedValue(catalogue);
     mocks.getCatalogueVersions.mockResolvedValue([]);
+    mocks.publishCatalogue.mockResolvedValue({
+      id: "version-4",
+      catalogue_id: catalogue.id,
+      version_number: 4,
+      snapshot: {},
+      published_by_id: "user-publisher",
+      published_at: "2026-09-29T00:00:00Z",
+    });
+    mocks.unpublishCatalogue.mockResolvedValue({
+      ...catalogue,
+      status: "draft",
+      public_access_enabled: false,
+      revision: catalogue.revision + 1,
+    });
     mocks.createCatalogue.mockResolvedValue({
       ...catalogue,
       id: "catalogue-created",
@@ -223,7 +261,9 @@ describe("CatalogueManagement preview action", () => {
     expect(
       await screen.findByText("Retail Beverage Guide"),
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    expect(screen.queryByRole("button", { name: "Preview" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "More catalogue actions" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Preview" }));
     expect(mocks.push).toHaveBeenCalledWith("/catalogues/catalogue-1/preview");
   });
 
@@ -252,7 +292,8 @@ describe("CatalogueManagement preview action", () => {
 
     expect(await screen.findByText("Retail Beverage Guide")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Preview" })).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Preview" }));
+    fireEvent.click(screen.getByRole("button", { name: "More catalogue actions" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Preview" }));
     expect(mocks.push).toHaveBeenCalledWith("/catalogues/catalogue-1/preview");
   });
 
@@ -275,7 +316,10 @@ describe("CatalogueManagement preview action", () => {
       />,
     );
 
-    const onlineLink = await screen.findByRole("link", { name: "View online" });
+    await screen.findByText("Retail Beverage Guide");
+    expect(screen.queryByRole("link", { name: "View online" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "More catalogue actions" }));
+    const onlineLink = await screen.findByRole("menuitem", { name: "View online" });
     expect(mocks.getCatalogueOnlineLinks).toHaveBeenCalledOnce();
     expect(onlineLink).toHaveAttribute(
       "href",
@@ -287,10 +331,129 @@ describe("CatalogueManagement preview action", () => {
 
   it("opens Catalogue Studio in a safe new tab", async () => {
     render(<CatalogueManagement currentUser={{ id:"studio-user", username:"studio", email:"studio@example.com", full_name:"Studio User", roles:[], permissions:["catalogues.view","catalogues.edit"] }} onToast={vi.fn()} />);
-    const studio = await screen.findByRole("link", { name: "Open Studio" });
+    await screen.findByText("Retail Beverage Guide");
+    expect(screen.queryByRole("link", { name: "Open Studio" })).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "More catalogue actions" }));
+    const studio = await screen.findByRole("menuitem", { name: "Open Studio" });
     expect(studio).toHaveAttribute("href", "/catalogues/catalogue-1/studio");
     expect(studio).toHaveAttribute("target", "_blank");
     expect(studio).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("keeps only the approved catalogue card information", async () => {
+    render(<CatalogueManagement currentUser={{ id:"metadata-user", username:"metadata", email:"metadata@example.com", full_name:"Metadata User", roles:[], permissions:["catalogues.view", "catalogue_share_links.view"] }} onToast={vi.fn()} />);
+
+    const title = await screen.findByRole("heading", { level: 3, name: "Retail Beverage Guide" });
+    const card = title.closest("article");
+    expect(card).not.toBeNull();
+    expect(within(card!).getByText("12")).toBeInTheDocument();
+    expect(within(card!).getByText("products")).toBeInTheDocument();
+    expect(within(card!).getByText("Published")).toBeInTheDocument();
+    expect(within(card!).getByText(/Updated/)).toBeInTheDocument();
+    expect(within(card!).getByRole("button", { name: "Catalogue links for Retail Beverage Guide" })).toBeInTheDocument();
+    expect(within(card!).getByRole("button", { name: "More catalogue actions" })).toBeInTheDocument();
+    expect(within(card!).queryByText("version")).not.toBeInTheDocument();
+    expect(within(card!).queryByText("pricing")).not.toBeInTheDocument();
+    expect(within(card!).queryByText("MO")).not.toBeInTheDocument();
+    expect(within(card!).queryByText("Catalogue")).not.toBeInTheDocument();
+    expect(within(card!).queryByText("Product Catalogue")).not.toBeInTheDocument();
+    expect(within(card!).queryByText("Mori · Company Customers")).not.toBeInTheDocument();
+    expect(within(card!).queryByText("A customer-ready beverage catalogue.")).not.toBeInTheDocument();
+  });
+
+  it("shows lifecycle actions from public access and draft state", async () => {
+    const liveDraft = {
+      ...catalogue,
+      id: "catalogue-live-draft",
+      title: "Catalogue With Pending Changes",
+      status: "draft" as const,
+      public_access_enabled: true,
+    };
+    const neverPublished = {
+      ...draftCatalogue,
+      id: "catalogue-never-published",
+      title: "New Catalogue",
+      version: 0,
+    };
+    mocks.getCatalogues.mockResolvedValue([catalogue, liveDraft, neverPublished]);
+
+    render(
+      <CatalogueManagement
+        currentUser={{
+          id: "publisher",
+          username: "publisher",
+          email: "publisher@example.com",
+          full_name: "Publisher",
+          roles: ["sales_manager"],
+          permissions: ["catalogues.view", "catalogues.publish"],
+        }}
+        onToast={vi.fn()}
+      />,
+    );
+
+    const publishedCard = (await screen.findByText("Retail Beverage Guide")).closest("article")!;
+    fireEvent.click(within(publishedCard).getByRole("button", { name: "More catalogue actions" }));
+    expect(within(publishedCard).getByRole("menuitem", { name: "Unpublish catalogue" })).toBeInTheDocument();
+    expect(within(publishedCard).queryByRole("menuitem", { name: "Publish catalogue" })).not.toBeInTheDocument();
+
+    const liveDraftCard = screen.getByText("Catalogue With Pending Changes").closest("article")!;
+    fireEvent.click(within(liveDraftCard).getByRole("button", { name: "More catalogue actions" }));
+    expect(within(liveDraftCard).getByRole("menuitem", { name: "Publish changes" })).toBeInTheDocument();
+    expect(within(liveDraftCard).getByRole("menuitem", { name: "Unpublish catalogue" })).toBeInTheDocument();
+
+    const newCard = screen.getByText("New Catalogue").closest("article")!;
+    fireEvent.click(within(newCard).getByRole("button", { name: "More catalogue actions" }));
+    expect(within(newCard).getByRole("menuitem", { name: "Publish catalogue" })).toBeInTheDocument();
+    expect(within(newCard).queryByRole("menuitem", { name: "Unpublish catalogue" })).not.toBeInTheDocument();
+  });
+
+  it("confirms unpublishing and updates the card without revoking its links", async () => {
+    const onToast = vi.fn();
+    const confirm = vi.spyOn(window, "confirm").mockReturnValue(true);
+    render(
+      <CatalogueManagement
+        currentUser={{
+          id: "sales-admin",
+          username: "sales.admin",
+          email: "sales.admin@example.com",
+          full_name: "Sales Admin",
+          roles: ["sales_manager"],
+          permissions: ["catalogues.view", "catalogues.publish"],
+        }}
+        onToast={onToast}
+      />,
+    );
+
+    const card = (await screen.findByText("Retail Beverage Guide")).closest("article")!;
+    fireEvent.click(within(card).getByRole("button", { name: "More catalogue actions" }));
+    fireEvent.click(within(card).getByRole("menuitem", { name: "Unpublish catalogue" }));
+
+    expect(confirm).toHaveBeenCalledWith(expect.stringContaining("All customer links will stop working immediately"));
+    await waitFor(() => expect(mocks.unpublishCatalogue).toHaveBeenCalledWith(catalogue.id));
+    expect(within(card).getByText("Draft")).toBeInTheDocument();
+    expect(onToast).toHaveBeenCalledWith("Catalogue unpublished. Customer links are now suspended.");
+  });
+
+  it("hides lifecycle actions without catalogue publish permission", async () => {
+    render(
+      <CatalogueManagement
+        currentUser={{
+          id: "viewer",
+          username: "viewer",
+          email: "viewer@example.com",
+          full_name: "Viewer",
+          roles: [],
+          permissions: ["catalogues.view"],
+        }}
+        onToast={vi.fn()}
+      />,
+    );
+
+    const card = (await screen.findByText("Retail Beverage Guide")).closest("article")!;
+    fireEvent.click(within(card).getByRole("button", { name: "More catalogue actions" }));
+    expect(within(card).queryByRole("menuitem", { name: "Publish catalogue" })).not.toBeInTheDocument();
+    expect(within(card).queryByRole("menuitem", { name: "Publish changes" })).not.toBeInTheDocument();
+    expect(within(card).queryByRole("menuitem", { name: "Unpublish catalogue" })).not.toBeInTheDocument();
   });
 
   it("sorts catalogue cards alphabetically in both directions", async () => {
@@ -423,10 +586,13 @@ describe("CatalogueManagement preview action", () => {
         name: "Catalogue links for Brand 19 Catalogue",
       }),
     );
-    expect(screen.getByTitle(/Copy Price link/)).toBeInTheDocument();
+    expect(screen.getByTitle(/Open Price catalogue/)).toBeInTheDocument();
   });
 
-  it("shows each catalogue's customer links in a collapsed dropdown", async () => {
+  it("opens a catalogue card link in a new tab instead of copying it", async () => {
+    // Regression guard: quick-link buttons must launch the customer catalogue;
+    // restoring the old clipboard handler would leave window.open untouched.
+    const openWindow = vi.spyOn(window, "open").mockImplementation(() => null);
     mocks.getCatalogueCardLinks.mockResolvedValue({
       [catalogue.id]: [
         {
@@ -477,7 +643,7 @@ describe("CatalogueManagement preview action", () => {
       name: "Catalogue links for Retail Beverage Guide",
     });
     expect(dropdown).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByTitle(/Copy Price link/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/Open Price catalogue/)).not.toBeInTheDocument();
 
     fireEvent.click(dropdown);
 
@@ -490,13 +656,21 @@ describe("CatalogueManagement preview action", () => {
     expect(normalLinkButton).not.toHaveTextContent("Normal");
     expect(normalLinkButton).toHaveAttribute(
       "title",
-      "Copy Price link using SP1",
+      "Open Price catalogue using SP1 in a new tab",
+    );
+
+    fireEvent.click(normalLinkButton!);
+
+    expect(openWindow).toHaveBeenCalledWith(
+      "http://example.test/catalogue-normal",
+      "_blank",
+      "noopener,noreferrer",
     );
 
     fireEvent.click(dropdown);
 
     expect(dropdown).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByTitle(/Copy Price link/)).not.toBeInTheDocument();
+    expect(screen.queryByTitle(/Open Price catalogue/)).not.toBeInTheDocument();
   });
 
   it("filters catalogue cards from the summary buttons and status dropdown", async () => {
@@ -609,7 +783,7 @@ describe("CatalogueManagement preview action", () => {
       />,
     );
 
-    expect(await screen.findByText("Browse published catalogues and copy a customer link.")).toBeInTheDocument();
+    expect(await screen.findByText("Browse published catalogues and open a customer catalogue.")).toBeInTheDocument();
     expect(screen.queryByText("Work in Progress Catalogue")).not.toBeInTheDocument();
     expect(screen.queryByText("Catalogue status summary")).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: "Edit" })).not.toBeInTheDocument();
@@ -620,8 +794,25 @@ describe("CatalogueManagement preview action", () => {
         name: "Catalogue links for Retail Beverage Guide",
       }),
     );
-    expect(screen.getByTitle(/Copy Price link/)).toBeEnabled();
-    expect(screen.getByRole("button", { name: /No Price/ })).toBeEnabled();
+    const openWindow = vi.spyOn(window, "open").mockImplementation(() => null);
+    const priceButton = screen.getByTitle(/Open Price catalogue/);
+    const noPriceButton = screen.getByRole("button", { name: /No Price/ });
+    expect(priceButton).toBeEnabled();
+    expect(noPriceButton).toBeEnabled();
+    fireEvent.click(priceButton);
+    fireEvent.click(noPriceButton);
+    expect(openWindow).toHaveBeenNthCalledWith(
+      1,
+      "http://example.test/c/sales-1",
+      "_blank",
+      "noopener,noreferrer",
+    );
+    expect(openWindow).toHaveBeenNthCalledWith(
+      2,
+      "http://example.test/c/sales-5",
+      "_blank",
+      "noopener,noreferrer",
+    );
     expect(screen.queryByRole("button", { name: /VIP BKK/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Big Customer/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /Retail$/ })).not.toBeInTheDocument();
@@ -644,7 +835,8 @@ describe("CatalogueManagement preview action", () => {
       />,
     );
 
-    fireEvent.click(await screen.findByRole("button", { name: "Edit" }));
+    fireEvent.click(await screen.findByRole("button", { name: "More catalogue actions" }));
+    fireEvent.click(await screen.findByRole("menuitem", { name: "Catalogue details" }));
     fireEvent.click(
       await screen.findByRole("button", { name: "Delete catalogue" }),
     );

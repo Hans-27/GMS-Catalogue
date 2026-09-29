@@ -1368,6 +1368,7 @@ def _sync_published_design_to_catalogue(
     catalogue.version = next_version
     catalogue.revision += 1
     catalogue.status = "published"
+    catalogue.public_access_enabled = True
     catalogue.published_by_id = actor.id
     catalogue.published_at = now
     catalogue.updated_by_id = actor.id
@@ -1384,21 +1385,10 @@ def _unpublish_design_catalogue(
     """Return the linked commerce catalogue to draft and disable public links."""
     catalogue = _ensure_design_catalogue_projection(db, design, actor)
 
-    now = datetime.now(UTC)
     catalogue.status = "draft"
-    catalogue.published_by_id = None
-    catalogue.published_at = None
+    catalogue.public_access_enabled = False
     catalogue.updated_by_id = actor.id
     catalogue.revision += 1
-    for link in db.scalars(
-        select(CatalogueShareLink).where(
-            CatalogueShareLink.catalogue_id == catalogue.id,
-            CatalogueShareLink.status == "active",
-        )
-    ):
-        link.status = "revoked"
-        link.revoked_by_id = actor.id
-        link.revoked_at = now
     db.flush()
     return catalogue
 

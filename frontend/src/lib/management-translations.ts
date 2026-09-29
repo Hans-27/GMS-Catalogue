@@ -156,6 +156,11 @@ export const MANAGEMENT_THAI_TRANSLATIONS: Record<string, string> = {
   "Customer price level": "ระดับราคาลูกค้า",
   "Customer price": "ราคาลูกค้า",
   "Retail price": "ราคาขายปลีก",
+  "Product links": "\u0e25\u0e34\u0e07\u0e01\u0e4c\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32",
+  "Open {{product}} website": "\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c\u0e02\u0e2d\u0e07 {{product}}",
+  "Open product website": "\u0e40\u0e1b\u0e34\u0e14\u0e40\u0e27\u0e47\u0e1a\u0e44\u0e0b\u0e15\u0e4c\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32",
+  "Play {{product}} video": "\u0e40\u0e25\u0e48\u0e19\u0e27\u0e34\u0e14\u0e35\u0e42\u0e2d\u0e02\u0e2d\u0e07 {{product}}",
+  "Play product video": "\u0e40\u0e25\u0e48\u0e19\u0e27\u0e34\u0e14\u0e35\u0e42\u0e2d\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32",
   "SP1 · Normal price": "SP1 · ราคาปกติ",
   "Normal price": "ราคาปกติ",
   "{{count}} product images": "รูปภาพสินค้า {{count}} รูป",
@@ -218,6 +223,7 @@ export const MANAGEMENT_THAI_TRANSLATIONS: Record<string, string> = {
     "{{positions}} ตำแหน่ง · {{teams}} ทีม",
   "A4 PDF": "PDF ขนาด A4",
   "Creating…": "กำลังสร้าง…",
+  "Download Excel": "ดาวน์โหลด Excel",
   "Delete this catalogue link?": "ต้องการลบลิงก์แคตตาล็อกนี้หรือไม่?",
   "Regenerate this link? The old link will stop working.":
     "ต้องการสร้างลิงก์ใหม่หรือไม่? ลิงก์เดิมจะหยุดทำงาน",
@@ -351,6 +357,12 @@ export const MANAGEMENT_THAI_TRANSLATIONS: Record<string, string> = {
   "Copy {{audience}} link": "คัดลอกลิงก์ {{audience}}",
   "Copy {{audience}} link using {{priceList}}":
     "คัดลอกลิงก์ {{audience}} โดยใช้ราคา {{priceList}}",
+  "Open {{audience}} catalogue using {{priceList}} in a new tab":
+    "เปิดแคตตาล็อก {{audience}} โดยใช้ {{priceList}} ในแท็บใหม่",
+  "Create and open the {{audience}} catalogue using {{priceList}} in a new tab":
+    "สร้างและเปิดแคตตาล็อก {{audience}} โดยใช้ {{priceList}} ในแท็บใหม่",
+  "Browse published catalogues and open a customer catalogue.":
+    "เรียกดูแคตตาล็อกที่เผยแพร่และเปิดแคตตาล็อกสำหรับลูกค้า",
   "Could not copy the catalogue link. Your browser may be blocking clipboard access.":
     "ไม่สามารถคัดลอกลิงก์แคตตาล็อกได้ เบราว์เซอร์อาจปิดกั้นการเข้าถึงคลิปบอร์ด",
   "Could not create the catalogue link.": "ไม่สามารถสร้างลิงก์แคตตาล็อกได้",
@@ -848,6 +860,14 @@ export const MANAGEMENT_THAI_TRANSLATIONS: Record<string, string> = {
   "Approve product": "อนุมัติสินค้า",
   "Publish product": "เผยแพร่สินค้า",
   Unpublish: "ยกเลิกการเผยแพร่",
+  "Publish catalogue": "เผยแพร่แคตตาล็อก",
+  "Publish changes": "เผยแพร่การเปลี่ยนแปลง",
+  "Unpublish catalogue": "ยกเลิกการเผยแพร่แคตตาล็อก",
+  "Unpublish this catalogue? All customer links will stop working immediately. Published-version history and link URLs will be retained.":
+    "ยกเลิกการเผยแพร่แคตตาล็อกนี้หรือไม่ ลิงก์ลูกค้าทั้งหมดจะหยุดทำงานทันที โดยจะเก็บประวัติเวอร์ชันและ URL ของลิงก์ไว้",
+  "Catalogue unpublished. Customer links are now suspended.":
+    "ยกเลิกการเผยแพร่แคตตาล็อกแล้ว ลิงก์ลูกค้าถูกระงับ",
+  "Could not unpublish the catalogue.": "ไม่สามารถยกเลิกการเผยแพร่แคตตาล็อกได้",
   "Loading promotion…": "กำลังโหลดโปรโมชั่น…",
   "Special Promotion": "โปรโมชั่นพิเศษ",
   "ELIGIBLE PRODUCTS": "สินค้าที่ร่วมรายการ",
@@ -1115,6 +1135,14 @@ export const MANAGEMENT_THAI_TRANSLATIONS: Record<string, string> = {
   "{{count}} updated": "อัปเดต {{count}}",
   "{{count}} skipped": "ข้าม {{count}}",
   "General Settings": "การตั้งค่าทั่วไป",
+  "Sidebar navigation": "เมนูแถบด้านข้าง",
+  "Choose which permitted buttons appear in the management sidebar on this device.":
+    "เลือกปุ่มที่ได้รับอนุญาตให้แสดงในแถบเมนูด้านข้างบนอุปกรณ์นี้",
+  "Changes save automatically on this device.":
+    "การเปลี่ยนแปลงจะบันทึกอัตโนมัติบนอุปกรณ์นี้",
+  "Saved automatically.": "บันทึกอัตโนมัติแล้ว",
+  "Could not save on this device. Check browser storage permissions and try again.":
+    "ไม่สามารถบันทึกบนอุปกรณ์นี้ได้ โปรดตรวจสอบสิทธิ์การจัดเก็บข้อมูลของเบราว์เซอร์แล้วลองอีกครั้ง",
   "ERP Database": "ฐานข้อมูล ERP",
   "Backup Management": "การจัดการข้อมูลสำรอง",
   "System Health": "สถานะระบบ",
@@ -1469,4 +1497,10 @@ export const MANAGEMENT_THAI_TRANSLATIONS: Record<string, string> = {
   "this legacy SQL Server accepted the supplied SQL login through TDS. Use a VPN or private network for production traffic because the server does not currently provide a verified TLS certificate.":
     "SQL Server รุ่นเดิมนี้ยอมรับบัญชี SQL ผ่าน TDS โปรดใช้ VPN หรือเครือข่ายส่วนตัวสำหรับระบบจริง เนื่องจากเซิร์ฟเวอร์ยังไม่มีใบรับรอง TLS ที่ตรวจสอบได้",
   version: "เวอร์ชัน",
+  Appearance: "รูปลักษณ์",
+  Light: "สว่าง",
+  Dark: "มืด",
+  "Account menu for {{name}}": "เมนูบัญชีของ {{name}}",
+  "Choose how the management platform appears on this device.":
+    "เลือกรูปลักษณ์ของแพลตฟอร์มจัดการบนอุปกรณ์นี้",
 };

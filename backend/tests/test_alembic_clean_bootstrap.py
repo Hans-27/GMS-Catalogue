@@ -54,6 +54,10 @@ def test_clean_alembic_bootstrap_registers_erp_and_platform_models(tmp_path):
                 "WHERE type='table' AND name NOT LIKE 'sqlite_%'"
             )
         }
+        catalogue_columns = {
+            row[1] for row in db.execute("PRAGMA table_info(catalogues)")
+        }
     assert REQUIRED_OPERATIONAL_TABLES <= tables, sorted(
         REQUIRED_OPERATIONAL_TABLES - tables
     )
+    assert "public_access_enabled" in catalogue_columns

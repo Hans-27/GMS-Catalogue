@@ -5,8 +5,11 @@
   min-height: 100vh;
   display: grid;
   grid-template-columns: 235px 1fr;
-  color: var(--ink);
-  background: #f1f4f2;
+  color: var(--admin-text);
+  background: var(--admin-canvas);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 .page > aside {
   position: sticky;
@@ -79,6 +82,9 @@
   min-width: 0;
 }
 .pageHeader {
+  position: sticky;
+  top: 0;
+  z-index: 20;
   min-height: 102px;
   padding: 19px clamp(22px, 4vw, 48px);
   display: flex;
@@ -86,7 +92,8 @@
   justify-content: space-between;
   gap: 20px;
   border-bottom: 1px solid var(--line);
-  background: #fff;
+  background: var(--admin-surface);
+  box-shadow: 0 8px 22px rgba(19, 36, 26, 0.06);
 }
 .pageHeader span,
 .panel header span {
@@ -131,7 +138,7 @@
   padding: 24px;
   border: 1px solid var(--line);
   border-radius: 17px;
-  background: #fff;
+  background: var(--admin-surface);
   box-shadow: 0 12px 35px rgba(22, 55, 35, 0.05);
 }
 .panel > header {
@@ -426,14 +433,16 @@
   gap: 4px;
   border: 1px solid var(--line);
   border-radius: 11px;
+  background: var(--admin-surface);
 }
 .settingList span {
-  color: #74847a;
-  font-size: 8px;
+  color: var(--admin-text-muted);
+  font-size: 13px;
   text-transform: capitalize;
 }
 .settingList strong {
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: 500;
 }
 .languageSetting {
   align-content: start;
@@ -445,6 +454,184 @@
   min-width: 42px;
   min-height: 28px;
   cursor: pointer;
+}
+.appearanceSetting {
+  align-content: start;
+}
+.appearanceSetting p {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-size: 13px;
+}
+.themeSelector {
+  margin-top: 4px;
+  justify-self: start;
+}
+
+.sidebarVisibilitySetting {
+  margin: 18px 0 0;
+  padding: 18px;
+  border: 1px solid var(--admin-border);
+  border-radius: 12px;
+  background: var(--admin-surface);
+}
+
+.sidebarVisibilitySetting legend {
+  padding: 0 6px;
+  color: var(--admin-text);
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.sidebarVisibilitySetting > p {
+  margin: 0 0 14px;
+  color: var(--admin-text-muted);
+  font-size: 13px;
+}
+
+.sidebarVisibilitySetting > .sidebarAutosaveStatus {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: -6px;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+}
+
+.sidebarAutosaveStatus::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--admin-success, #1f8a50);
+}
+
+.sidebarAutosaveStatus[data-status="error"] {
+  color: var(--admin-danger, #c0362c);
+}
+
+.sidebarAutosaveStatus[data-status="error"]::before {
+  background: var(--admin-danger, #c0362c);
+}
+
+.sidebarVisibilityGroups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.sidebarVisibilityGroups section {
+  padding: 12px;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--admin-border);
+  border-radius: 10px;
+  background: var(--admin-surface-soft);
+}
+
+.sidebarVisibilityGroups section > strong {
+  margin-bottom: 5px;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.sidebarVisibilityGroups label {
+  min-height: 38px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 38px;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.sidebarVisibilityGroups label > span {
+  color: var(--admin-text);
+  font-size: 13px;
+}
+
+.sidebarVisibilityGroups input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.sidebarVisibilityGroups label > i {
+  position: relative;
+  width: 38px;
+  height: 22px;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 999px;
+  background: var(--admin-surface-muted);
+  transition: 160ms ease;
+}
+
+.sidebarVisibilityGroups label > i::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(16, 24, 40, 0.24);
+  transition: 160ms ease;
+}
+
+.sidebarVisibilityGroups input:checked + i {
+  border-color: #25834a;
+  background: #25834a;
+}
+
+.sidebarVisibilityGroups input:checked + i::after {
+  transform: translateX(16px);
+}
+
+.sidebarVisibilityGroups input:focus-visible + i {
+  outline: 3px solid var(--admin-focus);
+  outline-offset: 2px;
+}
+
+@media (max-width: 760px) {
+  .sidebarVisibilityGroups { grid-template-columns: 1fr; }
+}
+
+.page :is(h1, h2, h3, h4, strong, b, button, label, nav a) {
+  font-weight: 500;
+}
+
+.pageHeader h1 { font-size: clamp(25px, 2.3vw, 30px); line-height: 1.15; }
+.panel h3 { font-size: 21px; line-height: 1.25; }
+.pageHeader p,
+.panel header p { color: var(--admin-text-muted); font-size: 13px; }
+.page aside nav a { font-size: 13px; }
+
+:global(:root[data-theme="dark"]) .pageHeader,
+:global(:root[data-theme="dark"]) .panel,
+:global(:root[data-theme="dark"]) .gauge,
+:global(:root[data-theme="dark"]) .metricGrid article,
+:global(:root[data-theme="dark"]) .syncGrid article,
+:global(:root[data-theme="dark"]) .settingList div {
+  color: var(--admin-text);
+  background: var(--admin-surface);
+}
+
+:global(:root[data-theme="dark"]) .page input,
+:global(:root[data-theme="dark"]) .page select,
+:global(:root[data-theme="dark"]) .page textarea,
+:global(:root[data-theme="dark"]) .page button {
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+  background-color: var(--admin-surface-muted);
+}
+
+:global(:root[data-theme="dark"]) .page :focus-visible {
+  outline: 3px solid var(--admin-focus);
+  outline-offset: 2px;
 }
 .empty {
   padding: 24px;
@@ -676,4 +863,31 @@
     width: 110px;
     height: 110px;
   }
+}
+:global(:root[data-theme="dark"]) .page > aside {
+  color: #edf7f0;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(54, 139, 88, 0.14), transparent 32%),
+    linear-gradient(180deg, #121c16 0%, #0b130e 100%);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.28);
+}
+
+:global(:root[data-theme="dark"]) .page aside nav a {
+  color: rgba(237, 247, 240, 0.78);
+}
+
+:global(:root[data-theme="dark"]) .page aside nav a:hover,
+:global(:root[data-theme="dark"]) .page aside nav a[data-active="true"] {
+  color: #ffffff;
+  background: rgba(79, 185, 120, 0.18);
+  box-shadow: inset 3px 0 #68cb8b;
+}
+
+:global(:root[data-theme="dark"]) .back {
+  color: rgba(237, 247, 240, 0.78);
+}
+
+:global(:root[data-theme="dark"]) .back:hover {
+  color: #ffffff;
+  background: rgba(79, 185, 120, 0.12);
 }

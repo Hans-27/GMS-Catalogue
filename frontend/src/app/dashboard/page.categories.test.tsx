@@ -98,6 +98,13 @@ describe("category management", () => {
     renderPage();
 
     await screen.findByRole("heading", { name: "Categories" });
+    expect(screen.queryByText("Demo environment")).not.toBeInTheDocument();
+    expect(screen.queryByText("Demo v0.1.0")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(
+        "This system is currently under review. Features and workflows may change based on user feedback.",
+      ),
+    ).not.toBeInTheDocument();
     expect(apiMocks.getCategories).toHaveBeenCalledWith(true, true);
     fireEvent.click(screen.getByRole("button", { name: "Nubwo categories" }));
     expect(screen.getByText("Keyboard")).toBeInTheDocument();

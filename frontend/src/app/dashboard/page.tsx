@@ -4,8 +4,10 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { ApplicationLogo } from "@/components/application-logo";
+import { AccountMenu } from "@/components/account-menu";
 import { type DashboardView } from "@/lib/routes";
 import {
+  accountTypeLabel,
   allowedNavigation,
   canAccess,
   canAccessAny,
@@ -54,7 +56,6 @@ import {
   type CatalogueStats,
   type DashboardOverview,
   type DashboardSyncStatus,
-  type GlobalSearchItem,
   type Category,
   type ErpProductImageCandidate,
   type UserCataloguePriceMapping,
@@ -66,18 +67,12 @@ import {
   type ProductPage,
   type WorkflowStatus,
 } from "@/lib/api";
-import {
-  DEMO_ENVIRONMENT_LABEL,
-  DEMO_REVIEW_MESSAGE,
-  DEMO_VERSION,
-} from "@/lib/demo-config";
 import { LanguageSwitcher, T, useLanguage } from "@/lib/i18n";
 import styles from "./dashboard.module.css";
 import { DashboardSidebar } from "./dashboard-sidebar";
 import { DashboardOverviewPanel } from "./dashboard-overview";
 import { CategoryManagement } from "./category-management";
 import { EntityStatusControl } from "./entity-status-control";
-import { GlobalSearch } from "./global-search";
 import {
   ProductLifecycleBadge,
   ProductStatusDialog,
@@ -3659,42 +3654,6 @@ export default function DashboardPage() {
     selectNavigationView(nextView);
   }
 
-  function selectGlobalSearchResult(item: GlobalSearchItem) {
-    if (item.kind === "product") {
-      setQuery(item.search_value);
-      setBrandFilter("");
-      setCategoryFilter("");
-      selectNavigationView("products");
-      void loadProductList({ q: item.search_value, brand: "", categoryId: "" }, 1);
-      void openProduct(item.id);
-      return;
-    }
-    if (item.kind === "brand") {
-      setQuery("");
-      setBrandFilter(item.search_value);
-      setCategoryFilter("");
-      selectNavigationView("products");
-      void loadProductList({ q: "", brand: item.search_value, categoryId: "" }, 1);
-      return;
-    }
-    if (item.kind === "category") {
-      setQuery("");
-      setBrandFilter("");
-      setCategoryFilter(item.search_value);
-      selectNavigationView("products");
-      void loadProductList({ q: "", brand: "", categoryId: item.search_value }, 1);
-      return;
-    }
-    if (item.kind === "catalogue" && item.href.startsWith("/dashboard")) {
-      const target = new URL(item.href, window.location.origin);
-      window.history.pushState({}, "", `${target.pathname}${target.search}`);
-      setViewResetKey((current) => current + 1);
-      selectNavigationView("catalogues");
-      return;
-    }
-    router.push(item.href);
-  }
-
   function openOverview() {
     setQuery("");
     setStatusFilter("");
@@ -3779,29 +3738,6 @@ export default function DashboardPage() {
           >
             <span aria-hidden="true">☰</span>
           </button>
-          <div className={styles.topbarIdentity}>
-            <p>{t("Catalogue Department")}</p>
-            <h1>
-              {t(
-                {
-                  overview: "Workspace overview",
-                  products: "Product catalogue",
-                  categories: "Category management",
-                  activity: "Activity history",
-                  organization: "Organization & access",
-                  users: "User control",
-                  pricing: "Price management",
-                  catalogues: "Catalogue management",
-                  feedback: "Demo feedback",
-                }[view],
-              )}
-            </h1>
-            <div className={styles.demoHeaderMeta}>
-              <span>{t(DEMO_ENVIRONMENT_LABEL)}</span>
-              <small>{DEMO_VERSION}</small>
-            </div>
-          </div>
-          <GlobalSearch onSelect={selectGlobalSearchResult} />
           <div className={styles.topActions}>
             {dashboardSync && (
               <button
@@ -3832,28 +3768,14 @@ export default function DashboardPage() {
                 {isRefreshing ? t("Refreshing...") : t("Refresh data")}
               </button>
             )}
-            <button
-              className={styles.avatarButton}
-              type="button"
-              onClick={handleLogout}
-              title={t("Sign out")}
-            >
-              <span>{user.full_name.slice(0, 1).toUpperCase()}</span>
-              <div>
-                <strong>{user.full_name}</strong>
-                <small>{t("Sign out")}</small>
-              </div>
-            </button>
+            <AccountMenu
+              user={user}
+              roleLabel={accountTypeLabel(user)}
+              canViewSettings={canViewSettings}
+              onSignOut={handleLogout}
+            />
           </div>
         </header>
-
-        <div className={styles.demoReviewBanner} role="note">
-          <span aria-hidden="true">
-            <T>i</T>
-          </span>
-          <p>{t(DEMO_REVIEW_MESSAGE)}</p>
-          <strong>{DEMO_VERSION}</strong>
-        </div>
 
         {error && (
           <div className={styles.pageError} role="alert">

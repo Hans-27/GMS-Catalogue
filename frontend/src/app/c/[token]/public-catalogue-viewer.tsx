@@ -19,7 +19,6 @@ import {
 } from "@/lib/api";
 import { hydratePublicStudioDesign } from "@/lib/public-studio-pricing";
 import { CatalogueProductCard } from "@/components/catalogue-product-card";
-import { CatalogueExploreLink } from "@/components/catalogue-explore-link";
 import { CatalogueOnlineCover } from "@/components/catalogue-online-cover";
 import {
   CatalogueImageDialog,
@@ -415,7 +414,7 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
 
   const navigationSectionIds = useMemo(() => catalogue?.studio_design_id
     ? (studioDesign?.pages.filter((page) => page.is_visible) || []).map((_, index) => `studio-page-${index + 1}`)
-    : ["cover", ...(activeSection ? [`category-${activeSection.slug}`] : [])], [activeSection, catalogue?.studio_design_id, studioDesign]);
+    : (activeSection ? [`category-${activeSection.slug}`] : []), [activeSection, catalogue?.studio_design_id, studioDesign]);
   const [currentSection, setCurrentSection] = useCatalogueCurrentSection(navigationSectionIds);
   const [categoryQuery, setCategoryQuery] = useState("");
 
@@ -423,30 +422,32 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
     event.preventDefault();
     await load(password);
   }
-  async function downloadPdf() {
+  async function downloadExcel() {
     if (!catalogue || downloading) return;
     setDownloading(true);
     setError("");
     try {
       const response = await fetch(
-        `${API_URL}/v1/public/catalogues/${encodeURIComponent(token)}/pdf`,
+        `${API_URL}/v1/public/catalogues/${encodeURIComponent(token)}/excel`,
         {
           headers: password ? { "X-Catalogue-Password": password } : undefined,
         },
       );
       if (!response.ok) {
         const body = await response.json().catch(() => null);
-        throw new Error(body?.detail || "PDF download failed.");
+        throw new Error(body?.detail || "Excel download failed.");
       }
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const matchedFilename = disposition.match(/filename="?([^";]+)"?/i)?.[1];
       const url = URL.createObjectURL(await response.blob());
       const anchor = document.createElement("a");
       anchor.href = url;
-      anchor.download = `${catalogue.title}.pdf`;
+      anchor.download = matchedFilename || `${catalogue.title}.xlsx`;
       anchor.click();
       URL.revokeObjectURL(url);
     } catch (caught) {
       setError(
-        caught instanceof Error ? caught.message : "PDF download failed.",
+        caught instanceof Error ? caught.message : "Excel download failed.",
       );
     } finally {
       setDownloading(false);
@@ -638,7 +639,7 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
         <div className={sidebarStyles.desktopToolbarActions}>
           <button type="button" data-active={language === "en"} onClick={() => setLanguage("en")}><T>EN</T></button>
           <button type="button" data-active={language === "th"} onClick={() => setLanguage("th")}>ไทย</button>
-          {catalogue.allow_pdf_download && <button className={sidebarStyles.mobileToolbarAction} type="button" onClick={() => void downloadPdf()} disabled={downloading}>{t(downloading ? "Creating…" : "Download PDF")}</button>}
+          {catalogue.allow_pdf_download && <button className={sidebarStyles.mobileToolbarAction} type="button" onClick={() => void downloadExcel()} disabled={downloading}>{t(downloading ? "Creating…" : "Download Excel")}</button>}
           {catalogue.allow_print && <button className={sidebarStyles.mobileToolbarAction} type="button" onClick={() => studioPdfUrl && window.open(studioPdfUrl, "_blank", "noopener,noreferrer")}><T>Print</T></button>}
         </div>
       </header>
@@ -707,16 +708,12 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
   );
   const coverImageUrl = mediaUrl(coverImage?.preview_url || coverImage?.file_url);
   const brandImage = catalogueBrandImage(catalogue);
-  const coverBackgroundImage = brandImage || coverImageUrl;
   return (
     <div className={`${styles.page} ${sidebarStyles.layout}`}>
       <CatalogueSidebar title={catalogue.title} subtitle={`${catalogue.product_count} ${t("products")}`}
         logo={coverImageUrl ? <img src={coverImageUrl} alt={`${catalogue.title} cover`} /> : brandImage ? <img src={brandImage} alt={`${catalogue.title} brand`} /> : undefined}
         searchLabel={t("Search products")} searchPlaceholder={t("Search products")} searchHint={activeSection ? t("Search within {{category}}", { category: activeSection.name }) : undefined} searchValue={query} onSearchChange={setQuery}
         mobileActions={mobileLanguageActions}
-        utilities={[
-          { id: "cover", label: t("Back to Cover"), badge: "⌂", href: "#cover", active: currentSection === "cover", onSelect: () => { setCurrentSection("cover"); document.getElementById("cover")?.scrollIntoView?.({ behavior: "smooth", block: "start" }); history.replaceState(null, "", "#cover"); } },
-        ]}
         categories={allSections.map((section) => ({
           id: section.slug, label: section.name, href: `#category-${section.slug}`,
           count: section.show_product_count ? section.products.length : undefined,
@@ -757,10 +754,10 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
             <button
               className={sidebarStyles.mobileToolbarAction}
               type="button"
-              onClick={() => void downloadPdf()}
+              onClick={() => void downloadExcel()}
               disabled={downloading}
             >
-              {t(downloading ? "Creating…" : "Download PDF")}
+              {t(downloading ? "Creating…" : "Download Excel")}
             </button>
           )}
           {catalogue.allow_print && (
@@ -790,38 +787,6 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
       <div className={sidebarStyles.body}>
 
         <main>
-          <div id="cover"><CatalogueOnlineCover cover={catalogue.online_cover} title={catalogue.title} productCount={catalogue.product_count} exploreHref={activeSection ? `#category-${activeSection.slug}` : "#products"} exploreLabel={t("Explore products")} productsLabel={t("products")} fallback={
-          <section
-            className={styles.cover}
-            data-has-artwork={Boolean(coverBackgroundImage)}
-            data-logo-layout={coverBackgroundImage ? "background-watermark" : undefined}
-          >
-          {coverBackgroundImage && (
-            <img
-              className={styles.coverBrandWatermark}
-              data-catalogue-brand-watermark={brandImage ? "true" : undefined}
-              data-catalogue-cover-artwork={!brandImage && coverImageUrl ? "true" : undefined}
-              src={coverBackgroundImage}
-              alt=""
-              aria-hidden="true"
-            />
-          )}
-          <div className={styles.coverCopy}>
-            <h1>{catalogue.title}</h1>
-            <CatalogueExploreLink
-              href={activeSection ? `#category-${activeSection.slug}` : "#products"}
-              label={t("Explore products")}
-            />
-          </div>
-          <div className={styles.coverVisual}>
-            <aside>
-              <strong>{catalogue.product_count}</strong>
-              <span>{t("products")}</span>
-            </aside>
-          </div>
-        </section>
-          } /></div>
-
           <div id="products" className={styles.content}>
           {sections.map((section) => (
             <section
@@ -830,8 +795,8 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
               className={styles.section}
             >
               <header>
-                <h2>{section.name}</h2>
-                <strong>
+                <h2 className={styles.sectionTitle}>{section.name}</h2>
+                <strong className={styles.sectionCount}>
                   {section.products.length} {t("products")}
                 </strong>
               </header>
@@ -848,6 +813,7 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
                     cardStyle={catalogue.product_card_style}
                     cardTheme={catalogue.product_card_theme}
                     retailPriceOverride={catalogue.customer_name ? product.price ?? null : undefined}
+                    useVvipPrice={catalogue.audience_code.toLowerCase() === "vvip"}
                     onPlay={(trigger) => setPlaying({ product, trigger })}
                     onOpenImages={setImageSelection}
                   />
@@ -870,9 +836,6 @@ export function PublicCatalogueViewer({ token }: { token: string }) {
       </div>
       <footer className={styles.footer}>
         <strong>{catalogue.title}</strong>
-        <span>
-          <T>Version</T> {catalogue.version}
-        </span>
       </footer>
       {playing?.product.video && (
         <ProductVideoModal

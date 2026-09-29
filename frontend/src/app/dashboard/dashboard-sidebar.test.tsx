@@ -52,6 +52,7 @@ function Harness({ collapsed = false, initialMobileOpen = false }: { collapsed?:
 describe("DashboardSidebar brand navigation", () => {
   beforeEach(() => {
     window.history.replaceState(null, "", APP_ROUTES.overview);
+    window.localStorage.removeItem("gms-sidebar-hidden-items-v1");
     window.localStorage.setItem("gms-catalogue-language", "th");
     Object.defineProperty(window, "scrollTo", { configurable: true, value: vi.fn() });
   });
@@ -90,6 +91,21 @@ describe("DashboardSidebar brand navigation", () => {
     expect(products).toHaveAttribute("aria-current", "page");
   });
 
+  it("hides only sidebar buttons disabled in General Settings", () => {
+    // Production defect: saved per-button visibility preferences are ignored by
+    // the management sidebar.
+    window.localStorage.setItem(
+      "gms-sidebar-hidden-items-v1",
+      JSON.stringify([APP_ROUTES.products]),
+    );
+
+    render(<Harness />);
+
+    expect(screen.queryByRole("link", { name: /^Products/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Dashboard/ })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /^Price Lists/ })).toBeInTheDocument();
+  });
+
   it("uses the Thai baht symbol for Price Lists", () => {
     render(<Harness />);
     const priceLists = screen.getByRole("link", { name: /^Price Lists/ });
@@ -113,7 +129,7 @@ describe("DashboardSidebar brand navigation", () => {
     expect(screen.getByRole("link", { name: /^Dashboard/ })).toHaveAttribute("aria-current", "page");
   });
 
-  it("shows Sales users catalogues and read-only system tools", () => {
+  it("hides the System group from Sales users even when system permissions are assigned", () => {
     render(
       <LanguageProvider>
         <DashboardSidebar
@@ -145,9 +161,10 @@ describe("DashboardSidebar brand navigation", () => {
 
     expect(screen.getByRole("link", { name: "Go to Catalogues" })).toHaveAttribute("href", APP_ROUTES.catalogues);
     expect(screen.getByRole("link", { name: "Catalogues" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Data Synchronization" })).toHaveAttribute("href", APP_ROUTES.dataSync);
-    expect(screen.getByRole("link", { name: "System Health" })).toHaveAttribute("href", APP_ROUTES.systemHealth);
-    expect(screen.getByRole("link", { name: "Settings" })).toHaveAttribute("href", APP_ROUTES.settings);
+    expect(screen.queryByRole("link", { name: "Data Synchronization" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "System Health" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "System" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^Dashboard/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^Products/ })).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: "Collapse sidebar" })).toBeInTheDocument();
@@ -161,7 +178,17 @@ describe("DashboardSidebar brand navigation", () => {
           navigationItems={[["catalogues", "CM", "Catalogues"]]}
           productCount={12}
           inReviewCount={0}
-          user={{ ...user, roles: ["sales_manager"], permissions: ["catalogues.view", "product_cards.view"] }}
+          user={{
+            ...user,
+            roles: ["sales_manager"],
+            permissions: [
+              "catalogues.view",
+              "product_cards.view",
+              "data_sync.view",
+              "system_metrics.view",
+              "settings.view",
+            ],
+          }}
           collapsed={false}
           mobileOpen={false}
           onNavigate={vi.fn()}
@@ -173,6 +200,32 @@ describe("DashboardSidebar brand navigation", () => {
     );
 
     expect(screen.getByRole("link", { name: "Product Cards" })).toHaveAttribute("href", APP_ROUTES.productCards);
+    expect(screen.queryByRole("region", { name: "System" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the System group available to SuperAdmin", () => {
+    render(
+      <LanguageProvider>
+        <DashboardSidebar
+          activeView="overview"
+          navigationItems={navigationItems}
+          productCount={12}
+          inReviewCount={0}
+          user={{ ...user, is_superadmin: true }}
+          collapsed={false}
+          mobileOpen={false}
+          onNavigate={vi.fn()}
+          onBrandNavigate={vi.fn()}
+          onToggleCollapsed={vi.fn()}
+          onCloseMobile={vi.fn()}
+        />
+      </LanguageProvider>,
+    );
+
+    expect(screen.getByRole("region", { name: "System" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Data Synchronization" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "System Health" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Settings" })).toBeInTheDocument();
   });
 
   it("gives Customer accounts a catalogue-only navigation", () => {
@@ -187,7 +240,13 @@ describe("DashboardSidebar brand navigation", () => {
             ...user,
             full_name: "Shared Customer",
             roles: ["customer_user"],
-            permissions: ["catalogues.view", "catalogues.preview"],
+            permissions: [
+              "catalogues.view",
+              "catalogues.preview",
+              "data_sync.view",
+              "system_metrics.view",
+              "settings.view",
+            ],
           }}
           collapsed={false}
           mobileOpen={false}
@@ -204,12 +263,42 @@ describe("DashboardSidebar brand navigation", () => {
     expect(screen.getByText("Customer")).toBeInTheDocument();
     expect(screen.queryByRole("link", { name: /^Dashboard/ })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Data Synchronization" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: "System Health" })).not.toBeInTheDocument();
     expect(screen.queryByRole("link", { name: "Settings" })).not.toBeInTheDocument();
+    expect(screen.queryByRole("region", { name: "System" })).not.toBeInTheDocument();
   });
 
   it("keeps the navigation scrollable without showing a scrollbar", () => {
     const css = readFileSync(join(process.cwd(), "src/app/dashboard/dashboard.module.css"), "utf8");
     expect(css).toMatch(/\.sidebar nav\s*\{[\s\S]*?overflow-y:\s*auto;[\s\S]*?scrollbar-width:\s*none;/);
     expect(css).toMatch(/\.sidebar nav::\-webkit-scrollbar\s*\{[\s\S]*?display:\s*none;/);
+  });
+
+  it("gives dashboard and Settings sidebars dedicated dark-theme surfaces", () => {
+    const dashboardCss = readFileSync(
+      join(process.cwd(), "src/app/dashboard/dashboard.module.css"),
+      "utf8",
+    );
+    const settingsCss = readFileSync(
+      join(process.cwd(), "src/app/admin/settings/settings.module.css"),
+      "utf8",
+    );
+
+    expect(dashboardCss).toMatch(
+      /:global\(:root\[data-theme="dark"\]\) \.sidebar\s*\{[\s\S]*?background:/,
+    );
+    expect(settingsCss).toMatch(
+      /:global\(:root\[data-theme="dark"\]\) \.page > aside\s*\{[\s\S]*?background:/,
+    );
+  });
+
+  it("keeps the dashboard top bar free of the page identity and global search", () => {
+    const pageSource = readFileSync(
+      join(process.cwd(), "src/app/dashboard/page.tsx"),
+      "utf8",
+    );
+
+    expect(pageSource).not.toContain("<GlobalSearch");
+    expect(pageSource).not.toContain(`className={styles.topbarIdentity}`);
   });
 });

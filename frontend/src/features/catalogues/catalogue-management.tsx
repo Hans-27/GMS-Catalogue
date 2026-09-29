@@ -1,6 +1,5 @@
 "use client";
 
-/* eslint-disable @next/next/no-img-element -- Catalogue logos can require the signed-in browser session and must not be proxied by Next Image. */
 import Link from "next/link";
 import { T, useLanguage } from "@/lib/i18n";
 import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
@@ -31,6 +30,7 @@ import {
   getProducts,
   getProductVideos,
   publishCatalogue,
+  unpublishCatalogue,
   regenerateCatalogueShareLink,
   revokeCatalogueShareLink,
   saveBrand,
@@ -59,6 +59,7 @@ import {
 } from "@/lib/api";
 import { copyTextToClipboard } from "@/lib/clipboard";
 import { formatApiDate, parseApiDate } from "@/lib/date-time";
+import { CatalogueLogoPanel } from "@/components/catalogue-logo-panel";
 import styles from "@/app/dashboard/dashboard.module.css";
 import { CoverEditor } from "./cover-editor";
 import { canAccess, isCataloguePortalUser, isCustomerUser, isSalesUser } from "@/lib/access";
@@ -191,10 +192,14 @@ export function catalogueLinkLabel(value: string) {
 }
 
 export function catalogueCardShareLinks(
-  catalogue: Pick<ManagedCatalogue, "catalogue_type" | "show_prices">,
+  catalogue: Pick<ManagedCatalogue, "catalogue_type" | "show_prices"> & {
+    brand?: string | null;
+  },
   links: CatalogueShareLink[],
 ) {
-  const visibleLinks = ["normal", "no_price"]
+  const brand = catalogue.brand?.trim().toLowerCase() || "";
+  const hasVvipLink = brand.startsWith("glink") || brand.startsWith("lumira");
+  const visibleLinks = ["normal", ...(hasVvipLink ? ["vvip"] : []), "no_price"]
     .map((audienceCode) =>
       links.find(
         (link) => link.audience_code.toLowerCase() === audienceCode,
@@ -253,6 +258,7 @@ export function CatalogueManagement({
   const [customerLinkAudience, setCustomerLinkAudience] = useState("");
   const [expandedCardLinks, setExpandedCardLinks] = useState<string[]>([]);
   const [openCardMenu, setOpenCardMenu] = useState<string | null>(null);
+  const [catalogueLifecycleAction, setCatalogueLifecycleAction] = useState("");
   const [uploadingCardLogo, setUploadingCardLogo] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [catalogueQuery, setCatalogueQuery] = useState("");
@@ -962,6 +968,74 @@ export function CatalogueManagement({
     }
   }
 
+  function replaceCatalogueSummary(detail: ManagedCatalogue) {
+    setCatalogues((current) =>
+      current.map((item) =>
+        item.id === detail.id ? { ...detail, products: [] } : item,
+      ),
+    );
+    setSelected((current) => (current?.id === detail.id ? detail : current));
+  }
+
+  async function publishFromCard(catalogue: ManagedCatalogue) {
+    if (!canPublish || catalogueLifecycleAction) return;
+    setOpenCardMenu(null);
+    setCatalogueLifecycleAction(catalogue.id);
+    setError("");
+    try {
+      const version = await publishCatalogue(catalogue.id);
+      const detail = await getCatalogue(catalogue.id);
+      replaceCatalogueSummary(detail);
+      void getCatalogueOnlineLinks().then(setOnlineLinks).catch(() => undefined);
+      onToast(
+        t("Catalogue version {{version}} published.", {
+          version: version.version_number,
+        }),
+      );
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? t(caughtError.message)
+          : t("Could not publish the catalogue."),
+      );
+    } finally {
+      setCatalogueLifecycleAction("");
+    }
+  }
+
+  async function unpublishFromCard(catalogue: ManagedCatalogue) {
+    if (
+      !canPublish ||
+      catalogueLifecycleAction ||
+      !window.confirm(
+        t(
+          "Unpublish this catalogue? All customer links will stop working immediately. Published-version history and link URLs will be retained.",
+        ),
+      )
+    ) return;
+    setOpenCardMenu(null);
+    setCatalogueLifecycleAction(catalogue.id);
+    setError("");
+    try {
+      const detail = await unpublishCatalogue(catalogue.id);
+      replaceCatalogueSummary(detail);
+      setOnlineLinks((current) => {
+        const next = { ...current };
+        delete next[catalogue.id];
+        return next;
+      });
+      onToast(t("Catalogue unpublished. Customer links are now suspended."));
+    } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? t(caughtError.message)
+          : t("Could not unpublish the catalogue."),
+      );
+    } finally {
+      setCatalogueLifecycleAction("");
+    }
+  }
+
   async function copyShareLink(link: CatalogueShareLink) {
     if (!link.public_url || link.status !== "active") return;
     const copied = await copyTextToClipboard(link.public_url);
@@ -984,6 +1058,11 @@ export function CatalogueManagement({
         customer: link.customer_name || link.audience_name,
       }),
     );
+  }
+
+  function openShareLink(link: CatalogueShareLink) {
+    if (!link.public_url || link.status !== "active") return;
+    window.open(link.public_url, "_blank", "noopener,noreferrer");
   }
 
   function replaceShareLink(link: CatalogueShareLink) {
@@ -1031,6 +1110,42 @@ export function CatalogueManagement({
       replaceShareLink(created);
       await copyShareLink(created);
     } catch (caughtError) {
+      setError(
+        caughtError instanceof ApiError
+          ? t(caughtError.message)
+          : t("Could not create the catalogue link."),
+      );
+    } finally {
+      setLinkAction("");
+    }
+  }
+
+  async function createAndOpen(
+    catalogue: ManagedCatalogue,
+    link: CatalogueShareLink,
+  ) {
+    if (
+      (!canCreateShareLinks && !canCopyShareLinks) ||
+      catalogue.status !== "published"
+    ) return;
+    const key = `${catalogue.id}:${link.audience_code}`;
+    const newTab = window.open("about:blank", "_blank");
+    if (newTab) newTab.opener = null;
+    setLinkAction(key);
+    setError("");
+    try {
+      const created = await createCatalogueShareLink(catalogue.id, {
+        audience_type_id: link.audience_type_id,
+      });
+      replaceShareLink(created);
+      if (created.public_url) {
+        if (newTab) newTab.location.href = created.public_url;
+        else openShareLink(created);
+      } else {
+        newTab?.close();
+      }
+    } catch (caughtError) {
+      newTab?.close();
       setError(
         caughtError instanceof ApiError
           ? t(caughtError.message)
@@ -2940,7 +3055,7 @@ export function CatalogueManagement({
               {isReadOnlyCustomer
                 ? "Browse and open published catalogues."
                 : isReadOnlySales
-                  ? "Browse published catalogues and copy a customer link."
+                  ? "Browse published catalogues and open a customer catalogue."
                 : "Create, manage and publish product catalogues for your customers."}
             </T>
           </p>
@@ -3157,65 +3272,66 @@ export function CatalogueManagement({
           const availableCardLinks = catalogueCardShareLinks(catalogue, cardLinks[catalogue.id] || []);
           const linksExpanded = expandedCardLinks.includes(catalogue.id);
           const cardLinksId = `catalogue-links-${catalogue.id}`;
+          const publicAccessEnabled =
+            catalogue.public_access_enabled ??
+            (catalogue.version > 0 && ["published", "draft"].includes(catalogue.status));
           const logoUrl = catalogue.brand_logo_url
             ? `${catalogue.brand_logo_url.startsWith("http") ? "" : API_ORIGIN}${catalogue.brand_logo_url}`
             : null;
+          const logoUploadControl = canUploadCover ? (
+            <label className={styles.catalogueLogoUpload}>
+              {uploadingCardLogo === catalogue.id
+                ? t("Uploading...")
+                : logoUrl ? t("Change logo") : t("Add logo")}
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                aria-label={`${logoUrl ? t("Change logo for") : t("Add logo for")} ${catalogue.brand || catalogue.title}`}
+                disabled={uploadingCardLogo === catalogue.id}
+                onChange={async (event) => {
+                  const input = event.currentTarget;
+                  const file = input.files?.[0];
+                  if (!file) return;
+                  setUploadingCardLogo(catalogue.id);
+                  setError("");
+                  try {
+                    const asset = await uploadCatalogueCoverAsset(
+                      catalogue.id,
+                      "brand_logo",
+                      file,
+                      `${catalogue.brand || catalogue.title} logo`,
+                    );
+                    setCatalogues((current) => current.map((item) =>
+                      item.id === catalogue.id
+                        ? { ...item, brand_logo_url: asset.preview_url }
+                        : item,
+                    ));
+                  } catch (uploadError) {
+                    setError(uploadError instanceof Error ? uploadError.message : t("Could not upload the brand logo."));
+                  } finally {
+                    setUploadingCardLogo(null);
+                    input.value = "";
+                  }
+                }}
+              />
+            </label>
+          ) : null;
           return (
           <article key={catalogue.id} className={styles.catalogueCard}>
             <div className={styles.catalogueCover}>
-              <div className={styles.catalogueCoverIdentity}>
-                <span>{catalogue.brand?.slice(0, 2).toUpperCase() || "GM"}</span>
-                <small>{catalogue.catalogue_type === "booklet" ? t("Booklet") : t("Catalogue")}</small>
-              </div>
-              <div className={styles.catalogueCoverPreview}>
-                {logoUrl ? (
-                  <img src={logoUrl} alt={`${catalogue.brand || catalogue.title} logo`} />
-                ) : (
-                  <div className={styles.catalogueCoverFallback}>
-                    <span>{catalogue.brand || "GMS"}</span>
-                    <strong>{catalogue.catalogue_type === "booklet" ? t("Digital Booklet") : t("Product Catalogue")}</strong>
-                    <i>{catalogue.catalogue_type === "booklet" ? "BOOKLET" : "CATALOGUE"}</i>
-                  </div>
-                )}
-                {canUploadCover && (
-                  <label className={styles.catalogueLogoUpload}>
-                    {uploadingCardLogo === catalogue.id
-                      ? t("Uploading...")
-                      : logoUrl ? t("Change logo") : t("Add logo")}
-                    <input
-                      type="file"
-                      accept="image/jpeg,image/png,image/webp"
-                      aria-label={`${logoUrl ? t("Change logo for") : t("Add logo for")} ${catalogue.brand || catalogue.title}`}
-                      disabled={uploadingCardLogo === catalogue.id}
-                      onChange={async (event) => {
-                        const input = event.currentTarget;
-                        const file = input.files?.[0];
-                        if (!file) return;
-                        setUploadingCardLogo(catalogue.id);
-                        setError("");
-                        try {
-                          const asset = await uploadCatalogueCoverAsset(
-                            catalogue.id,
-                            "brand_logo",
-                            file,
-                            `${catalogue.brand || catalogue.title} logo`,
-                          );
-                          setCatalogues((current) => current.map((item) =>
-                            item.id === catalogue.id
-                              ? { ...item, brand_logo_url: asset.preview_url }
-                              : item,
-                          ));
-                        } catch (uploadError) {
-                          setError(uploadError instanceof Error ? uploadError.message : t("Could not upload the brand logo."));
-                        } finally {
-                          setUploadingCardLogo(null);
-                          input.value = "";
-                        }
-                      }}
-                    />
-                  </label>
-                )}
-              </div>
+              {logoUrl ? (
+                <CatalogueLogoPanel
+                  className={styles.catalogueCoverPreview}
+                  logoUrl={logoUrl}
+                  alt={`${catalogue.brand || catalogue.title} logo`}
+                >
+                  {logoUploadControl}
+                </CatalogueLogoPanel>
+              ) : canUploadCover ? (
+                <div className={styles.catalogueCoverPreview}>
+                  {logoUploadControl}
+                </div>
+              ) : null}
               {canViewShareLinks && (
                 <div
                   className={styles.catalogueQuickLinks}
@@ -3251,13 +3367,12 @@ export function CatalogueManagement({
                   {linksExpanded && (
                     <div className={styles.catalogueLinkList} id={cardLinksId}>
                       {availableCardLinks.map((link) => {
-                        const key =
-                          link.id || `${catalogue.id}:${link.audience_code}`;
                         const cardAudienceLabel =
                           link.audience_code.toLowerCase() === "normal"
                             ? "Price"
                             : catalogueLinkLabel(link.audience_name);
                         const unavailable =
+                          !publicAccessEnabled ||
                           catalogue.version < 1 ||
                           ["revoked", "expired"].includes(link.status);
                         return (
@@ -3280,14 +3395,15 @@ export function CatalogueManagement({
                                   )
                                 : link.status === "not_generated"
                                   ? t(
-                                      "Create and copy this audience link for {{priceList}}",
+                                      "Create and open the {{audience}} catalogue using {{priceList}} in a new tab",
                                       {
+                                        audience: cardAudienceLabel,
                                         priceList:
                                           link.price_list_name || t("No Price"),
                                       },
                                     )
                                   : t(
-                                      "Copy {{audience}} link using {{priceList}}",
+                                      "Open {{audience}} catalogue using {{priceList}} in a new tab",
                                       {
                                         audience: cardAudienceLabel,
                                         priceList:
@@ -3297,17 +3413,15 @@ export function CatalogueManagement({
                             }
                             onClick={() =>
                               link.id
-                                ? void copyShareLink(link)
-                                : void createAndCopy(catalogue, link)
+                                ? openShareLink(link)
+                                : void createAndOpen(catalogue, link)
                             }
                           >
-                            <span>{copiedLink === key ? "✓" : "↗"}</span>
-                            {copiedLink === key
-                              ? t("Copied")
-                              : catalogue.catalogue_type === "booklet" &&
-                                  !catalogue.show_prices
-                                ? t("Catalog")
-                                : t(cardAudienceLabel)}
+                            <span>↗</span>
+                            {catalogue.catalogue_type === "booklet" &&
+                            !catalogue.show_prices
+                              ? t("Catalog")
+                              : t(cardAudienceLabel)}
                           </button>
                         );
                       })}
@@ -3317,35 +3431,14 @@ export function CatalogueManagement({
               )}
             </div>
             <div className={styles.catalogueCardBody}>
-              <small>
-                {catalogue.brand || t("All brands")} · {catalogue.audience}
-              </small>
               <div className={styles.catalogueCardTitleRow}>
                 <h3>{isReadOnlyPortal ? <Link href={`/catalogues/${catalogue.id}/preview${availableCardLinks[0]?.public_url ? `?share=${encodeURIComponent(availableCardLinks[0].public_url)}` : ""}`}>{catalogue.title}</Link> : catalogue.title}</h3>
                 <b className={styles.catalogueStatus} data-status={catalogue.status}>{t(statusLabel(catalogue.status))}</b>
               </div>
-              <p>
-                {catalogue.description || t("No catalogue description yet.")}
-              </p>
               <div className={styles.catalogueStats}>
                 <span>
                   <strong>{catalogue.product_count}</strong> <T>products</T>
                 </span>
-                <span>
-                  <strong>
-                    <T>v</T>
-                    {catalogue.version}
-                  </strong>{" "}
-                  <T>version</T>
-                </span>
-                {!isReadOnlyPortal && <span>
-                  <strong>
-                    {catalogue.show_prices
-                      ? catalogue.price_list_name || catalogue.currency
-                      : t("Hidden")}
-                  </strong>{" "}
-                  <T>pricing</T>
-                </span>}
               </div>
             </div>
             <footer>
@@ -3355,64 +3448,26 @@ export function CatalogueManagement({
                 })}
               </span>
               <div className={styles.catalogueCardActions}>
-                {onlineLinks[catalogue.id] && (
-                  <a
-                    className={styles.cataloguePreviewButton}
-                    href={onlineLinks[catalogue.id]}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <T>View online</T>
-                  </a>
-                )}
-                {canEdit && (
-                  <Link
-                    className={styles.catalogueStudioButton}
-                    href={
-                      catalogue.studio_editor_href ??
-                      `/catalogues/${catalogue.id}/studio`
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={t("Open Studio")}
-                  >
-                    <span className={styles.catalogueStudioIcon} aria-hidden="true">✦</span>
-                    <strong><T>Open Studio</T></strong>
-                    <span className={styles.catalogueStudioLaunch} aria-hidden="true">↗</span>
-                  </Link>
-                )}
-                {canPreview && canViewStudio && catalogue.studio_preview_href ? (
-                  <Link
-                    className={styles.cataloguePreviewButton}
-                    href={catalogue.studio_preview_href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <T>Preview</T>
-                  </Link>
-                ) : canPreview ? (
-                  <button
-                    className={styles.cataloguePreviewButton}
-                    type="button"
-                    onClick={() =>
-                      router.push(`/catalogues/${catalogue.id}/preview`)
-                    }
-                  >
-                    <T>Preview</T>
-                  </button>
-                ) : null}
-                {!catalogue.studio_design_id && (canEdit || canDelete) && (
-                  <button
-                    type="button"
-                    onClick={() => void openCatalogue(catalogue.id)}
-                  >
-                    <T>Edit</T>
-                  </button>
-                )}
                 {!isReadOnlyPortal && <div className={styles.catalogueMoreMenu}>
                   <button type="button" aria-label={t("More catalogue actions")} aria-expanded={openCardMenu === catalogue.id} onClick={() => setOpenCardMenu((current) => current === catalogue.id ? null : catalogue.id)}>•••</button>
                   {openCardMenu === catalogue.id && (
                     <div role="menu">
+                      {onlineLinks[catalogue.id] && <a role="menuitem" href={onlineLinks[catalogue.id]} target="_blank" rel="noopener noreferrer"><T>View online</T></a>}
+                      {canEdit && <Link role="menuitem" href={catalogue.studio_editor_href ?? `/catalogues/${catalogue.id}/studio`} target="_blank" rel="noopener noreferrer"><T>Open Studio</T></Link>}
+                      {canPreview && canViewStudio && catalogue.studio_preview_href ? (
+                        <Link role="menuitem" href={catalogue.studio_preview_href} target="_blank" rel="noopener noreferrer"><T>Preview</T></Link>
+                      ) : canPreview ? (
+                        <button type="button" role="menuitem" onClick={() => { setOpenCardMenu(null); router.push(`/catalogues/${catalogue.id}/preview`); }}><T>Preview</T></button>
+                      ) : null}
+                      {canPublish && !publicAccessEnabled && (
+                        <button type="button" role="menuitem" disabled={catalogueLifecycleAction === catalogue.id} onClick={() => void publishFromCard(catalogue)}><T>Publish catalogue</T></button>
+                      )}
+                      {canPublish && publicAccessEnabled && catalogue.status === "draft" && (
+                        <button type="button" role="menuitem" disabled={catalogueLifecycleAction === catalogue.id} onClick={() => void publishFromCard(catalogue)}><T>Publish changes</T></button>
+                      )}
+                      {canPublish && publicAccessEnabled && (
+                        <button type="button" role="menuitem" disabled={catalogueLifecycleAction === catalogue.id} onClick={() => void unpublishFromCard(catalogue)}><T>Unpublish catalogue</T></button>
+                      )}
                       {(canEdit || canDelete) && <button type="button" role="menuitem" onClick={() => { setOpenCardMenu(null); void openCatalogue(catalogue.id); }}><T>Catalogue details</T></button>}
                     </div>
                   )}

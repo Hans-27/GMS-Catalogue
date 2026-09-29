@@ -469,6 +469,7 @@
 }
 
 .topActions {
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -8022,4 +8023,386 @@
   .dashboardCardSkeleton::after,
   .heroSyncStatus[data-status="updating"] > i,
   .headerSyncStatus[data-status="updating"] > i { animation: none; }
+}
+
+/* Management UI readability and theme polish. */
+.app {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+.app :is(h1, h2, h3, h4, h5, h6, strong, b, label, button) {
+  font-weight: 500;
+}
+
+.brand strong,
+.sidebarFoot strong,
+.sidebar nav button,
+.sidebar nav a {
+  font-weight: 500;
+}
+
+.navSectionLabel {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.topbar {
+  background: color-mix(in srgb, var(--admin-surface) 96%, transparent);
+}
+
+.topbar p {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.topbar h1 {
+  color: var(--admin-text);
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.globalSearch {
+  background: var(--admin-surface);
+}
+
+.globalSearch input {
+  color: var(--admin-text);
+  font-size: 13px;
+}
+
+.globalSearch > kbd {
+  border-color: var(--admin-border);
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
+}
+
+.demoHeaderMeta span,
+.demoHeaderMeta small,
+.demoReviewBanner,
+.demoReviewBanner strong {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.commerceHero h2 {
+  color: var(--admin-text);
+  font-size: clamp(28px, 3vw, 34px);
+  font-weight: 500;
+  letter-spacing: -0.025em;
+}
+
+.commerceHero p {
+  color: var(--admin-text-muted);
+  font-size: 14px;
+}
+
+.catalogueStatusSummary > button {
+  min-height: 80px;
+  border-color: var(--admin-border);
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.catalogueStatusSummary strong {
+  font-size: 22px;
+  font-weight: 500;
+}
+
+.catalogueStatusSummary small {
+  color: var(--admin-text-muted);
+  font-size: 12px;
+}
+
+.catalogueLibraryTabs {
+  border-color: var(--admin-border);
+}
+
+.catalogueLibraryTabs button {
+  color: var(--admin-text-muted);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.catalogueFilters {
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-sm);
+}
+
+.catalogueFilters input,
+.catalogueFilters select,
+.generateCataloguesButton {
+  min-height: 42px;
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+  font-size: 13px;
+  font-weight: 400;
+}
+
+.generateCataloguesButton {
+  color: var(--admin-primary-dark);
+  font-weight: 500;
+}
+
+.catalogueCard {
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-card);
+}
+
+.catalogueCover {
+  background: var(--admin-surface-soft);
+}
+
+.catalogueCoverIdentity > span,
+.catalogueCoverIdentity > small,
+.catalogueLogoUpload {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.catalogueCoverPreview {
+  color: var(--admin-text);
+  background: linear-gradient(120deg, var(--admin-surface) 0 72%, var(--admin-primary-soft) 72%);
+}
+
+.catalogueCoverFallback span,
+.catalogueCoverFallback i {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.catalogueCoverFallback strong {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.catalogueQuickLinks {
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+}
+
+.catalogueQuickLinks > .catalogueLinksDisclosure {
+  min-height: 42px;
+  color: var(--admin-text);
+  background: var(--admin-surface);
+  font-size: 12px;
+  text-transform: none;
+}
+
+.catalogueLinksDisclosureLabel {
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.catalogueLinksDisclosureLabel small,
+.catalogueQuickLinks > .catalogueLinkList button {
+  font-size: 11px;
+  font-weight: 400;
+}
+
+.catalogueQuickLinks > .catalogueLinkList button {
+  min-height: 34px;
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+  background: var(--admin-surface-soft);
+}
+
+.catalogueCardBody {
+  padding: 14px 15px;
+}
+
+.catalogueCardBody > small,
+.catalogueCardTitleRow .catalogueStatus {
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.catalogueCardBody > .catalogueCardTitleRow {
+  display: flex;
+  grid-template-columns: none;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.catalogueCardTitleRow .catalogueStatus {
+  margin-left: auto;
+  padding: 2px 6px;
+  flex: 0 0 auto;
+  font-size: 9px;
+  line-height: 1.1;
+  transform: translateY(-5px);
+}
+
+.catalogueCardTitleRow h3 {
+  min-width: 0;
+  color: var(--admin-text);
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+}
+
+.catalogueCardBody > p {
+  min-height: 0;
+  color: var(--admin-text-muted);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.catalogueCardBody > .catalogueStats {
+  grid-template-columns: 1fr;
+}
+
+.catalogueStats > span {
+  padding: 9px 10px;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
+  font-size: 11px;
+}
+
+.catalogueStats > span strong {
+  color: var(--admin-text);
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.catalogueCard > footer {
+  min-height: 54px;
+  border-color: var(--admin-border);
+  background: var(--admin-surface-soft);
+}
+
+.catalogueCard > footer > span {
+  color: var(--admin-text-muted);
+  font-size: 11px;
+}
+
+.catalogueMoreMenu > button {
+  width: 38px;
+  height: 38px;
+  border-color: var(--admin-border) !important;
+  color: var(--admin-text) !important;
+  background: var(--admin-surface) !important;
+}
+
+.catalogueMoreMenu > div {
+  min-width: 190px;
+  border-color: var(--admin-border);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-float);
+}
+
+.catalogueMoreMenu > div :is(a, button) {
+  display: flex;
+  width: 100%;
+  min-height: 38px;
+  align-items: center;
+  border: 0;
+  border-radius: 7px;
+  color: var(--admin-text);
+  background: transparent;
+  padding: 9px 10px !important;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 400;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.catalogueMoreMenu > div :is(a, button):hover {
+  background: var(--admin-surface-soft);
+}
+
+.catalogueMoreMenu > div :is(a, button):focus-visible,
+.catalogueFilters :is(input, select, button):focus-visible,
+.catalogueLibraryTabs button:focus-visible,
+.catalogueStatusSummary > button:focus-visible {
+  outline: 3px solid color-mix(in srgb, var(--admin-focus) 35%, transparent);
+  outline-offset: 2px;
+}
+
+:global(:root[data-theme="dark"]) .demoReviewBanner {
+  color: var(--admin-text);
+  border-color: var(--admin-border);
+  background: var(--admin-surface-soft);
+}
+
+:global(:root[data-theme="dark"]) .catalogueCoverPreview:has(> img) {
+  background: #0b0d0c;
+}
+
+:global(:root[data-theme="dark"]) .catalogueQuickLinks > .catalogueLinksDisclosure:hover:not(:disabled),
+:global(:root[data-theme="dark"]) .catalogueCard:hover {
+  background: color-mix(in srgb, var(--admin-surface) 86%, var(--admin-primary-soft));
+}
+:global(:root[data-theme="dark"]) .sidebar {
+  color: #edf7f0;
+  border-right-color: #26362c;
+  background:
+    radial-gradient(circle at 15% 0%, rgba(54, 139, 88, 0.14), transparent 32%),
+    linear-gradient(180deg, #121c16 0%, #0b130e 100%);
+  box-shadow: 4px 0 24px rgba(0, 0, 0, 0.28);
+}
+
+:global(:root[data-theme="dark"]) .brand {
+  border-bottom-color: rgba(147, 193, 162, 0.16);
+}
+
+:global(:root[data-theme="dark"]) .brand:hover {
+  background: rgba(79, 185, 120, 0.08);
+}
+
+:global(:root[data-theme="dark"]) .brandText > span,
+:global(:root[data-theme="dark"]) .navSectionLabel {
+  color: rgba(222, 240, 228, 0.58);
+}
+
+:global(:root[data-theme="dark"]) .sidebar nav a,
+:global(:root[data-theme="dark"]) .sidebar nav button {
+  color: rgba(237, 247, 240, 0.78);
+}
+
+:global(:root[data-theme="dark"]) .sidebar nav a:hover,
+:global(:root[data-theme="dark"]) .sidebar nav button:hover {
+  color: #ffffff;
+  background: rgba(79, 185, 120, 0.12);
+}
+
+:global(:root[data-theme="dark"]) .sidebar nav .activeNav {
+  color: #ffffff;
+  background: rgba(79, 185, 120, 0.2);
+  box-shadow: inset 3px 0 #68cb8b;
+}
+
+:global(:root[data-theme="dark"]) .sidebar nav .activeNav > span:first-child {
+  color: #9be2b4;
+  background: rgba(79, 185, 120, 0.14);
+}
+
+:global(:root[data-theme="dark"]) .collapseSidebar {
+  color: rgba(237, 247, 240, 0.78);
+  border-color: rgba(147, 193, 162, 0.22);
+  background: rgba(79, 185, 120, 0.06);
+}
+
+:global(:root[data-theme="dark"]) .collapseSidebar:hover {
+  color: #ffffff;
+  background: rgba(79, 185, 120, 0.12);
+}
+
+:global(:root[data-theme="dark"]) .sidebarFoot {
+  border-top-color: rgba(147, 193, 162, 0.16);
+  background: rgba(79, 185, 120, 0.06);
+}
+
+:global(:root[data-theme="dark"]) .sidebarFoot span,
+:global(:root[data-theme="dark"]) .sidebarFoot small {
+  color: rgba(222, 240, 228, 0.6);
 }

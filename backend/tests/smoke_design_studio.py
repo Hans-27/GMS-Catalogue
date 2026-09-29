@@ -585,6 +585,7 @@ def main() -> None:
             )
             assert matching_catalogue is not None
             assert matching_catalogue["status"] == "published"
+            assert matching_catalogue["public_access_enabled"] is True
             assert matching_catalogue["title"] == published.json()["name"]
 
             unpublished = client.post(
@@ -614,6 +615,7 @@ def main() -> None:
                 if item["id"] == catalogue_id
             )
             assert matching_draft["status"] == "draft"
+            assert matching_draft["public_access_enabled"] is False
 
             republished = client.post(
                 f"/api/v1/catalogue-studio/designs/{design_id}/publish",
@@ -625,6 +627,12 @@ def main() -> None:
             assert republished.status_code == 200, republished.text
             assert republished.json()["status"] == "published"
             assert republished.json()["catalogue_id"] == catalogue_id
+            republished_catalogue = next(
+                item
+                for item in client.get("/api/v1/catalogues").json()
+                if item["id"] == catalogue_id
+            )
+            assert republished_catalogue["public_access_enabled"] is True
 
             republished_filter = client.get(
                 "/api/v1/catalogues", params={"status": "published"}

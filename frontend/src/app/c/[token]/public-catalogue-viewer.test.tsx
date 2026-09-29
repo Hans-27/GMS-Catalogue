@@ -60,6 +60,54 @@ const publicCatalogue = {
 describe("PublicCatalogueViewer", () => {
   afterEach(() => vi.unstubAllGlobals());
 
+  it("opens a standard public catalogue directly on its first product category", async () => {
+    // Production defect: customers must scroll past a generated catalogue-name
+    // cover before reaching the first category, even when no cover is wanted.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => publicCatalogue,
+    }));
+
+    const { container } = render(
+      <LanguageProvider>
+        <PublicCatalogueViewer token="category-first-catalogue" />
+      </LanguageProvider>,
+    );
+
+    const categoryHeading = await screen.findByRole("heading", { name: "Accessories" });
+    const main = categoryHeading.closest("main");
+    const sidebar = screen.getByRole("complementary", { name: "Catalogue categories" });
+
+    expect(main?.firstElementChild).toHaveAttribute("id", "products");
+    expect(container.querySelector("#cover")).not.toBeInTheDocument();
+    expect(within(main!).queryByRole("heading", { name: "AIGO Catalogue" })).not.toBeInTheDocument();
+    expect(within(main!).queryByRole("link", { name: "Explore products" })).not.toBeInTheDocument();
+    expect(within(sidebar).queryByRole("link", { name: "Back to Cover" })).not.toBeInTheDocument();
+  });
+
+  it("uses the modern catalogue section-title treatment", async () => {
+    // Production defect: category titles inherit the old editorial serif style
+    // and lack the compact visual marker used by the current catalogue system.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => publicCatalogue,
+    }));
+
+    render(
+      <LanguageProvider>
+        <PublicCatalogueViewer token="modern-section-title" />
+      </LanguageProvider>,
+    );
+
+    const heading = await screen.findByRole("heading", { name: "Accessories" });
+    expect(heading.className).toContain("sectionTitle");
+    expect(heading.closest("header")?.querySelector("strong")?.className).toContain(
+      "sectionCount",
+    );
+  });
+
   it("uses labelled page counts when a Studio section has no product bindings", async () => {
     const design = { id: "unbound-sections", catalogue_type: "standard", pages: [1, 2].map((i) => ({
       id: `empty-${i}`, page_type: "free_layout", page_name: `Empty ${i}`, width: 794, height: 1123, is_visible: true,
@@ -175,6 +223,46 @@ describe("PublicCatalogueViewer", () => {
     expect(click.mock.instances[0]).toHaveProperty("download", "aigo-accessories.xlsx");
   });
 
+  it("downloads the entire catalogue as Excel from the top toolbar", async () => {
+    // Production defect: the top toolbar still offers and requests a PDF,
+    // even though catalogue-wide downloads must now be Excel workbooks.
+    const fetchMock = vi.fn((input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.endsWith("/excel")) {
+        return Promise.resolve(new Response(
+          new Blob(["whole catalogue workbook"], {
+            type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          }),
+          {
+            status: 200,
+            headers: { "Content-Disposition": 'attachment; filename="aigo-catalogue.xlsx"' },
+          },
+        ));
+      }
+      return Promise.resolve({ ok: true, status: 200, json: async () => publicCatalogue });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("URL", {
+      ...URL,
+      createObjectURL: vi.fn(() => "blob:catalogue-excel"),
+      revokeObjectURL: vi.fn(),
+    });
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => undefined);
+
+    render(<LanguageProvider><PublicCatalogueViewer token="whole-catalogue-excel-token" /></LanguageProvider>);
+
+    const download = await screen.findByRole("button", { name: "Download Excel" });
+    expect(screen.queryByRole("button", { name: "Download PDF" })).not.toBeInTheDocument();
+    fireEvent.click(download);
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledWith(
+      "http://localhost:8000/api/v1/public/catalogues/whole-catalogue-excel-token/excel",
+      { headers: undefined },
+    ));
+    expect(click).toHaveBeenCalledOnce();
+    expect(click.mock.instances[0]).toHaveProperty("download", "aigo-catalogue.xlsx");
+  });
+
   it("hides category Excel actions when downloads are disabled", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
@@ -227,19 +315,14 @@ describe("PublicCatalogueViewer", () => {
     expect(toolbar.queryByText("PRODUCT CATALOGUE")).not.toBeInTheDocument();
   });
 
-  it("shows the uploaded online cover without a green overlay and preserves product navigation", async () => {
+  it("skips an uploaded online cover on a category-first standard catalogue", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({
       ...publicCatalogue, online_cover: { asset_id: "online-1", file_name: "finished.png", width: 900, height: 1200, url: "/api/online-cover/content" },
     }) }));
     render(<LanguageProvider><PublicCatalogueViewer token="public-token-1234567890" /></LanguageProvider>);
-    const cover = await screen.findByRole("img", { name: "AIGO Catalogue online cover" });
-    expect(cover).toHaveAttribute("src", "http://localhost:8000/api/online-cover/content");
-    expect(cover).not.toHaveAttribute("style", expect.stringContaining("gradient"));
-    expect(screen.getByRole("link", { name: /Explore products/ })).toHaveAttribute("href", "#category-accessories");
-    fireEvent.error(cover);
-    expect(await screen.findByRole("heading", { name: "AIGO Catalogue" })).toBeVisible();
+    expect(await screen.findByRole("heading", { name: "Accessories" })).toBeVisible();
     expect(screen.queryByRole("img", { name: "AIGO Catalogue online cover" })).not.toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Explore products/ })).toHaveAttribute("data-catalogue-explore", "true");
+    expect(screen.queryByRole("link", { name: /Explore products/ })).not.toBeInTheDocument();
   });
 
   it("adds an online cover without replacing the first product page when Studio has no cover page", async () => {
@@ -306,7 +389,7 @@ describe("PublicCatalogueViewer", () => {
       </LanguageProvider>,
     );
 
-    await screen.findByRole("heading", { name: "AIGO Catalogue" });
+    await screen.findByRole("heading", { name: "Accessories" });
     expect(screen.queryByText("VIP Province")).not.toBeInTheDocument();
     expect(screen.queryByText("VIP")).not.toBeInTheDocument();
     expect(screen.getByText("Prices for Siam Retail Co.")).toBeInTheDocument();
@@ -420,7 +503,7 @@ describe("PublicCatalogueViewer", () => {
     expect(within(sidebar).queryByRole("link", { name: /All Products/ })).not.toBeInTheDocument();
   });
 
-  it("uses the saved cover asset in the sidebar and as the hero background without repeating the description", async () => {
+  it("keeps a saved cover asset in the sidebar without rendering a hero", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -438,21 +521,14 @@ describe("PublicCatalogueViewer", () => {
 
     const cover = await screen.findByRole("img", { name: "AIGO Catalogue cover" });
     expect(cover).toHaveAttribute("src", "http://localhost:8000/media/aigo-cover.jpg");
-    const coverArtwork = container.querySelector('[data-catalogue-cover-artwork="true"]');
-    expect(coverArtwork).toHaveAttribute(
-      "src",
-      "http://localhost:8000/media/aigo-cover.jpg",
-    );
-    // Production defect: a saved logo-like cover asset can be rendered as a
-    // separate foreground rectangle instead of filling the cover background.
-    expect(coverArtwork?.closest("section")).toHaveAttribute(
-      "data-logo-layout",
-      "background-watermark",
-    );
+    expect(container.querySelector('[data-catalogue-cover-artwork="true"]')).not.toBeInTheDocument();
+    expect(container.querySelector("#cover")).not.toBeInTheDocument();
     expect(screen.queryByText("Current AIGO products.")).not.toBeInTheDocument();
   });
 
-  it("uses an available brand logo as a decorative cover watermark", async () => {
+  it("keeps a brand logo in the sidebar without rendering a cover watermark", async () => {
+    // Production defect: brand logos are enlarged across the green cover,
+    // obscuring the intentionally simple catalogue title and product count.
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -474,24 +550,15 @@ describe("PublicCatalogueViewer", () => {
       </LanguageProvider>,
     );
 
-    await screen.findByRole("heading", { name: "AIGO Catalogue" });
-    const watermark = container.querySelector(
-      '[data-catalogue-brand-watermark="true"]',
-    );
-    expect(watermark).toHaveAttribute(
+    expect(await screen.findByRole("img", { name: "AIGO Catalogue brand" })).toHaveAttribute(
       "src",
       "http://localhost:8000/media/aigo-logo.png",
     );
-    expect(watermark).toHaveAttribute("aria-hidden", "true");
-    // Production defect: the brand logo can regress into a separate foreground
-    // panel instead of acting as the cover's decorative background watermark.
-    expect(watermark?.closest("section")).toHaveAttribute(
-      "data-logo-layout",
-      "background-watermark",
-    );
+    expect(container.querySelector('[data-catalogue-brand-watermark="true"]')).not.toBeInTheDocument();
+    expect(container.querySelector("#cover")).not.toBeInTheDocument();
   });
 
-  it("keeps the generated cover free of a watermark when no brand logo exists", async () => {
+  it("does not generate cover markup when no brand logo exists", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
@@ -504,10 +571,11 @@ describe("PublicCatalogueViewer", () => {
       </LanguageProvider>,
     );
 
-    await screen.findByRole("heading", { name: "AIGO Catalogue" });
+    await screen.findByRole("heading", { name: "Accessories" });
     expect(
       container.querySelector('[data-catalogue-brand-watermark="true"]'),
     ).not.toBeInTheDocument();
+    expect(container.querySelector("#cover")).not.toBeInTheDocument();
   });
 
   it("uses the exact neutral reference card for every product and ignores legacy theme data", async () => {
@@ -572,6 +640,37 @@ describe("PublicCatalogueViewer", () => {
     expect(cards.every((card) => card.getAttribute("style") === null)).toBe(true);
   });
 
+  it("shows the selected SP7 amount as VVIP Price on a VVIP catalogue link", async () => {
+    // Production defect: the VVIP share link still shows the SP6 wholesale
+    // amount and label instead of its selected ERP SP7 price.
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ...publicCatalogue,
+        audience_type: "VVIP",
+        audience_code: "vvip",
+        price_list: { id: 7, name: "SP7", show_price: true },
+        products: [{
+          ...publicCatalogue.products[0],
+          price: "70.00",
+          wholesale_price: "90.00",
+        }],
+      }),
+    }));
+
+    render(
+      <LanguageProvider>
+        <PublicCatalogueViewer token="glink-vvip-sp7" />
+      </LanguageProvider>,
+    );
+
+    const facts = await screen.findByLabelText("Product stock and pricing");
+    expect(within(facts).getByText("VVIP Price")).toBeInTheDocument();
+    expect(within(facts).getByText("THB 70.00")).toBeInTheDocument();
+    expect(within(facts).queryByText("Wholesale price")).not.toBeInTheDocument();
+  });
+
   it("does not repeat the product code and brand below the live-data table", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
       ok: true,
@@ -596,6 +695,23 @@ describe("PublicCatalogueViewer", () => {
     await screen.findByLabelText("Product stock and pricing");
     expect(screen.queryByText("GLINK-FOOTER-001")).not.toBeInTheDocument();
     expect(screen.queryByText("Footer-only brand")).not.toBeInTheDocument();
+  });
+
+  it("keeps the catalogue title in the footer without showing a version label", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => publicCatalogue,
+    }));
+    render(
+      <LanguageProvider>
+        <PublicCatalogueViewer token="catalogue-footer" />
+      </LanguageProvider>,
+    );
+
+    const footer = await screen.findByRole("contentinfo");
+    expect(within(footer).getByText(publicCatalogue.title)).toBeInTheDocument();
+    expect(within(footer).queryByText(`Version ${publicCatalogue.version}`)).not.toBeInTheDocument();
   });
 
   it("shows all image controls in a protected generated catalogue", async () => {

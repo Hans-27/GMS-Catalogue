@@ -21,12 +21,14 @@ const catalogue = {
   valid_from: null,
   valid_until: null,
   is_public: true,
+  public_access_enabled: true,
   owner_id: null,
   product_count: 2038,
   products: [],
   created_at: "2026-09-01T00:00:00Z",
   updated_at: "2026-09-22T00:00:00Z",
   published_at: "2026-09-22T00:00:00Z",
+  brand_logo_url: "http://localhost:8000/api/brand-logo.svg",
 };
 
 const catalogueLinks = Array.from({ length: 5 }, (_, index) => ({
@@ -80,6 +82,15 @@ async function openFixture(page: Page, width: number) {
       return;
     }
 
+    if (path.endsWith("/brand-logo.svg")) {
+      await route.fulfill({
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="300" height="120"><rect width="60" height="120" fill="#080808"/><rect x="60" width="180" height="120" fill="#f5511e"/><rect x="240" width="60" height="120" fill="#080808"/><text x="150" y="72" fill="white" font-size="28" text-anchor="middle">NUBWO</text></svg>',
+        contentType: "image/svg+xml",
+        headers,
+      });
+      return;
+    }
+
     let body: unknown = [];
     if (path.endsWith("/auth/me")) {
       body = {
@@ -126,6 +137,24 @@ async function openFixture(page: Page, width: number) {
 }
 
 for (const width of [390, 1440]) {
+  test(`catalogue logo panel extends its dominant brand colour at ${width}px`, async ({ page }) => {
+    const errors = await openFixture(page, width);
+    const panel = page.getByTestId("catalogue-logo-panel");
+
+    await expect(page.getByRole("img", { name: "Nubwo logo" })).toBeVisible();
+    await expect(panel).toHaveAttribute("data-color-extracted", "true");
+    await expect(panel).toHaveCSS("background-color", "rgb(245, 81, 30)");
+    await expect(panel.getByText("Change logo")).toBeVisible();
+    expect(errors).toEqual([]);
+
+    await page.screenshot({
+      path: join(tmpdir(), `gms-catalogue-logo-background-${width}.png`),
+      fullPage: true,
+    });
+  });
+}
+
+for (const width of [390, 1440]) {
   test(`catalogue links use a contained dropdown at ${width}px`, async ({ page }) => {
     const errors = await openFixture(page, width);
     const dropdown = page.getByRole("button", {
@@ -142,7 +171,10 @@ for (const width of [390, 1440]) {
     await expect(priceLink).toBeVisible();
     await expect(priceLink).toContainText("Price");
     await expect(priceLink).not.toContainText("Normal");
-    await expect(priceLink).toHaveAttribute("title", "Copy Price link using SP1");
+    await expect(priceLink).toHaveAttribute(
+      "title",
+      "Open Price catalogue using SP1 in a new tab",
+    );
     await expect(page.getByRole("button", { name: /No Price/ })).toBeVisible();
     await expect(page.getByRole("button", { name: /VIP BKK/ })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /Big Customer/ })).toHaveCount(0);

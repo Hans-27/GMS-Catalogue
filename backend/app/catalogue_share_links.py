@@ -330,7 +330,7 @@ def _customer_identity(values: ShareLinkCreate) -> tuple[str, str | None]:
 
 
 def _create_link(db: Session, catalogue: Catalogue, audience: CatalogueAudienceType, actor_id: uuid.UUID | None, payload: ShareLinkCreate | None = None) -> CatalogueShareLink:
-    if catalogue.status not in {"published", "draft"} or catalogue.version < 1:
+    if not catalogue.public_access_enabled or catalogue.version < 1:
         raise HTTPException(status_code=409, detail="Publish at least one catalogue version before creating a public link.")
     values = payload or ShareLinkCreate(audience_type_id=audience.id)
     customer_code, customer_name = _customer_identity(values)
@@ -848,9 +848,15 @@ def _public_link(db: Session, token: str, password: str | None, action: str, req
     if link.status != "active": raise HTTPException(status_code=410, detail="This catalogue link is unavailable.")
     if link.password_hash and not signed_media and (not password or not verify_password(password, link.password_hash)):
         raise HTTPException(status_code=401, detail="A valid catalogue link password is required.")
-    if action in {"public_catalogue_pdf_downloaded", "public_catalogue_category_excel_downloaded"} and not link.allow_pdf_download:
+    if action in {
+        "public_catalogue_pdf_downloaded",
+        "public_catalogue_excel_downloaded",
+        "public_catalogue_category_excel_downloaded",
+    } and not link.allow_pdf_download:
         raise HTTPException(status_code=403, detail="Downloads are disabled for this catalogue link.")
     catalogue = link.catalogue
+    if not catalogue.public_access_enabled:
+        raise HTTPException(status_code=410, detail="This catalogue is currently unpublished.")
     if catalogue.status not in {"published", "draft"} or catalogue.version < 1:
         raise HTTPException(status_code=404, detail="Published catalogue not found.")
     version_number = link.fixed_version.version_number if link.version_mode == "fixed_published" and link.fixed_version else catalogue.version
@@ -1183,25 +1189,29 @@ def _add_public_product_image(worksheet, product, row_number: int) -> None:
         return
 
 
-def _category_workbook(presentation: PublicCatalogueResponse, category) -> BytesIO:
+def _products_workbook(
+    products: list,
+    worksheet_title: str,
+    category_name: str | None = None,
+    *,
+    audience_code: str = "",
+    customer_name: str | None = None,
+) -> BytesIO:
     from openpyxl import Workbook
     from openpyxl.styles import Alignment, Font, PatternFill
 
-    products = [
-        product for product in presentation.products
-        if product.product_status == "active" and (
-            product.category_name == category.name or category.name in product.categories
-        )
-    ]
     if not products:
-        raise HTTPException(status_code=404, detail="This category has no downloadable products.")
+        raise HTTPException(status_code=404, detail="This catalogue has no downloadable products.")
 
     workbook = Workbook()
     worksheet = workbook.active
-    worksheet.title = re.sub(r"[\\/*?:\[\]]", "-", str(category.name)).strip("'")[:31] or "Products"
+    worksheet.title = re.sub(r"[\\/*?:\[\]]", "-", worksheet_title).strip("'")[:31] or "Products"
+    use_vvip_price = audience_code.casefold() == "vvip"
     headings = [
         "Image", "Product code", "Product name", "Brand", "Category",
-        "Model", "Barcode", "Description", "Stock", "Price", "Currency",
+        "Model", "Barcode", "Description", "Stock",
+        "VVIP Price" if use_vvip_price else "Wholesale Price",
+        "Online Price", "Retail Price",
     ]
     worksheet.append(headings)
     header_fill = PatternFill("solid", fgColor="147A46")
@@ -1213,26 +1223,34 @@ def _category_workbook(presentation: PublicCatalogueResponse, category) -> Bytes
 
     for row_number, product in enumerate(products, start=2):
         model = product.erp_details.get("model", "")
+        primary_price = product.price if use_vvip_price else product.wholesale_price
+        retail_price = product.price if customer_name else product.retail_price
         worksheet.append([
             "",
             _excel_text(product.code),
             _excel_text(product.name),
             _excel_text(product.brand),
-            _excel_text(category.name),
+            _excel_text(
+                category_name
+                or product.category_name
+                or (product.categories[0] if product.categories else "")
+            ),
             _excel_text(model),
             _excel_text(product.barcode),
             _excel_text(product.description),
             product.stock_quantity if product.stock_quantity is not None else 0,
-            float(product.price) if product.price is not None else None,
-            _excel_text(product.currency),
+            float(primary_price) if primary_price is not None else None,
+            float(product.online_price) if product.online_price is not None else None,
+            float(retail_price) if retail_price is not None else None,
         ])
         for cell in worksheet[row_number]:
             cell.alignment = Alignment(vertical="top", wrap_text=True)
         worksheet.cell(row_number, 9).number_format = "0"
-        worksheet.cell(row_number, 10).number_format = '#,##0.00'
+        for column in range(10, 13):
+            worksheet.cell(row_number, column).number_format = '#,##0.00'
         _add_public_product_image(worksheet, product, row_number)
 
-    widths = [13, 18, 36, 18, 22, 18, 20, 48, 12, 14, 12]
+    widths = [13, 18, 36, 18, 22, 18, 20, 48, 12, 16, 14, 14]
     for column, width in enumerate(widths, start=1):
         worksheet.column_dimensions[worksheet.cell(1, column).column_letter].width = width
     worksheet.freeze_panes = "A2"
@@ -1241,6 +1259,37 @@ def _category_workbook(presentation: PublicCatalogueResponse, category) -> Bytes
     workbook.save(output)
     output.seek(0)
     return output
+
+
+def _category_workbook(presentation: PublicCatalogueResponse, category) -> BytesIO:
+    products = [
+        product for product in presentation.products
+        if product.product_status == "active" and (
+            product.category_name == category.name or category.name in product.categories
+        )
+    ]
+    if not products:
+        raise HTTPException(status_code=404, detail="This category has no downloadable products.")
+    return _products_workbook(
+        products,
+        str(category.name),
+        str(category.name),
+        audience_code=presentation.audience_code,
+        customer_name=presentation.customer_name,
+    )
+
+
+def _catalogue_workbook(presentation: PublicCatalogueResponse) -> BytesIO:
+    products = [
+        product for product in presentation.products
+        if product.product_status == "active"
+    ]
+    return _products_workbook(
+        products,
+        "Products",
+        audience_code=presentation.audience_code,
+        customer_name=presentation.customer_name,
+    )
 
 
 @router.get("/public/catalogues/{token}/categories/{category_slug}/excel")
@@ -1258,6 +1307,22 @@ def public_catalogue_category_excel(token: str, category_slug: str, request: Req
         raise HTTPException(status_code=404, detail="Catalogue category not found.")
     output = _category_workbook(presentation, category)
     filename = f"{link.catalogue.slug}-{category.slug}.xlsx"
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/public/catalogues/{token}/excel")
+def public_catalogue_excel(token: str, request: Request,
+    x_catalogue_password: str | None = Header(default=None), db: Session = Depends(get_db)):
+    link, presentation = _public_link(
+        db, token, x_catalogue_password,
+        "public_catalogue_excel_downloaded", request,
+    )
+    output = _catalogue_workbook(presentation)
+    filename = f"{link.catalogue.slug}.xlsx"
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",

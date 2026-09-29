@@ -338,6 +338,7 @@ class CatalogueResponse(BaseModel):
     valid_from: datetime | None
     valid_until: datetime | None
     is_public: bool
+    public_access_enabled: bool
     owner_id: uuid.UUID | None
     product_count: int
     products: list[CatalogueProductResponse] = Field(default_factory=list)

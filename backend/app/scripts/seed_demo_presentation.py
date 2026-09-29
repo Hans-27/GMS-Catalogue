@@ -833,6 +833,7 @@ def _ensure_catalogues(
             valid_from=now - timedelta(days=3) if published else None,
             valid_until=now + timedelta(days=90) if published else None,
             is_public=published,
+            public_access_enabled=published,
             owner_id=accounts["demo_catalogue"].id,
             created_by_id=accounts["demo_catalogue"].id,
             updated_by_id=accounts["demo_catalogue"].id,

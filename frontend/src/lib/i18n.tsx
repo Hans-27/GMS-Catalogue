@@ -228,6 +228,7 @@ const THAI_TRANSLATIONS: Record<string, string> = {
   Stock: "สต็อก",
   Price: "ราคา",
   "Wholesale price": "ราคาขายส่ง",
+  "VVIP Price": "ราคา VVIP",
   "Online price": "ราคาออนไลน์",
   "In Transit": "อยู่ระหว่างขนส่ง",
   Ordered: "สั่งซื้อแล้ว",

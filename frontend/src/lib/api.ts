@@ -1127,6 +1127,7 @@ export type ManagedCatalogue = {
   valid_from: string | null;
   valid_until: string | null;
   is_public: boolean;
+  public_access_enabled?: boolean;
   owner_id: string | null;
   product_count: number;
   products: CatalogueProduct[];
@@ -2540,6 +2541,15 @@ export function publishCatalogue(
 ): Promise<CatalogueVersion> {
   return catalogueRequest<CatalogueVersion>(
     `/v1/catalogues/${catalogueId}/publish`,
+    { method: "POST" },
+  );
+}
+
+export function unpublishCatalogue(
+  catalogueId: string,
+): Promise<ManagedCatalogue> {
+  return catalogueRequest<ManagedCatalogue>(
+    `/v1/catalogues/${catalogueId}/unpublish`,
     { method: "POST" },
   );
 }

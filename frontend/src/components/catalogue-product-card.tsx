@@ -39,6 +39,26 @@ function detailValue(product: CataloguePreviewProduct, key: string) {
   return value || null;
 }
 
+function safeWebsiteUrl(product: CataloguePreviewProduct) {
+  const value = detailValue(product, "website_url")
+    || detailValue(product, "website")
+    || detailValue(product, "product_url");
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+function packSizeValue(product: CataloguePreviewProduct) {
+  const value = detailValue(product, "pack_size");
+  if (!value) return "—";
+  const quantity = Number(value.replace(/,/g, ""));
+  return Number.isFinite(quantity) && quantity === 0 ? "—" : value;
+}
+
 function hasPurchaseOrderQuantity(value: string | null) {
   if (!value) return false;
   const quantity = Number(value.replace(/,/g, ""));
@@ -60,16 +80,27 @@ function inTransitOrderValue(
   return statuses.length ? statuses.join(" / ") : "—";
 }
 
+function structuredPurchaseOrderValues(product: CataloguePreviewProduct) {
+  const inTransit = detailValue(product, "in_transit") || detailValue(product, "goods_in_transit");
+  const ordered = detailValue(product, "ordered") || detailValue(product, "goods_ordered");
+  return {
+    inTransit: hasPurchaseOrderQuantity(inTransit) ? inTransit : null,
+    ordered: hasPurchaseOrderQuantity(ordered) ? ordered : null,
+  };
+}
+
 export function CatalogueProductCard({
   product,
   showPrices,
   catalogueCurrency,
   locale,
+  onPlay,
   onOpenImages,
   canManageStatus = false,
   statusUpdating = false,
   onStatusChange,
   retailPriceOverride,
+  useVvipPrice = false,
 }: {
   product: CataloguePreviewProduct;
   showPrices: boolean;
@@ -83,6 +114,7 @@ export function CatalogueProductCard({
   statusUpdating?: boolean;
   onStatusChange?: (status: "active" | "inactive") => void;
   retailPriceOverride?: string | null;
+  useVvipPrice?: boolean;
 }) {
   const { language, t } = useLanguage();
   const [imageIndex, setImageIndex] = useState(0);
@@ -98,7 +130,7 @@ export function CatalogueProductCard({
   const model = detailValue(product, "model") || product.code || "—";
   const warranty = detailValue(product, "warranty") || "—";
   const wholesalePrice = formatMoney(
-    product.wholesale_price,
+    useVvipPrice ? product.price : product.wholesale_price,
     product.currency || catalogueCurrency,
     locale,
   );
@@ -117,6 +149,9 @@ export function CatalogueProductCard({
   const statusLabel = statusUpdating
     ? t("Updating {{product}} status", { product: name })
     : t("Set {{product}} {{status}}", { product: name, status: nextStatus });
+  const purchaseOrder = structuredPurchaseOrderValues(product);
+  const websiteUrl = safeWebsiteUrl(product);
+  const hasCardActions = Boolean(websiteUrl || (product.video && onPlay));
 
   useEffect(() => {
     if (imageCount < 2) return;
@@ -169,8 +204,14 @@ export function CatalogueProductCard({
 
       <div className={styles.details}>
         <div className={styles.metadata}>
-          <span>{model}</span>
-          <span>{warranty}</span>
+          <div className={styles.metadataRow}>
+            <span>{model}</span>
+            <span>{warranty}</span>
+          </div>
+          <div className={styles.packSizeMetadata}>
+            <span>Pcs/Carton</span>
+            <span>{packSizeValue(product)}</span>
+          </div>
         </div>
 
         {canManageStatus && onStatusChange && (
@@ -193,9 +234,17 @@ export function CatalogueProductCard({
         <dl className={styles.facts} aria-label={t("Product stock and pricing")}>
           <div>
             <dt>{t("Stock")}</dt>
-            <dd className={styles.liveStock} aria-live="polite">
+            <dd
+              className={`${styles.liveStock}${product.stock_quantity === 0 ? ` ${styles.outOfStock}` : ""}`}
+              aria-live="polite"
+            >
               {product.stock_quantity === null || product.stock_quantity === undefined ? "—" : (
-                <><i aria-hidden="true" />{product.stock_quantity.toLocaleString(locale)} {t("available")}</>
+                <>
+                  <i aria-hidden="true" />
+                  {product.stock_quantity === 0
+                    ? t("Out of stock")
+                    : `${product.stock_quantity.toLocaleString(locale)} ${t("available")}`}
+                </>
               )}
             </dd>
           </div>
@@ -206,7 +255,7 @@ export function CatalogueProductCard({
           {showPrices && (
             <>
               <div>
-                <dt>{t("Wholesale price")}</dt>
+                <dt>{t(useVvipPrice ? "VVIP Price" : "Wholesale price")}</dt>
                 <dd>{wholesalePrice || "—"}</dd>
               </div>
               <div>
@@ -220,15 +269,74 @@ export function CatalogueProductCard({
           )}
           <div>
             <dt>{t("Intransit / Order")}</dt>
-            <dd>{inTransitOrderValue(product, t)}</dd>
+            <dd className={styles.purchaseOrderValue}>
+              {purchaseOrder.inTransit || purchaseOrder.ordered ? (
+                <>
+                  {purchaseOrder.inTransit && (
+                    <span
+                      className={styles.inTransitQuantity}
+                      aria-label={`${t("In Transit")} ${purchaseOrder.inTransit}`}
+                    >
+                      {purchaseOrder.inTransit}
+                    </span>
+                  )}
+                  {purchaseOrder.inTransit && purchaseOrder.ordered && (
+                    <span className={styles.purchaseOrderSeparator} aria-hidden="true"> / </span>
+                  )}
+                  {purchaseOrder.ordered && (
+                    <span
+                      className={styles.orderedQuantity}
+                      aria-label={`${t("Ordered")} ${purchaseOrder.ordered}`}
+                    >
+                      {purchaseOrder.ordered}
+                    </span>
+                  )}
+                </>
+              ) : inTransitOrderValue(product, t)}
+            </dd>
           </div>
         </dl>
       </div>
 
-      {showPrices && (
-        <div className={styles.retailPrice} aria-label={`${t("Retail price")}: ${retailPrice || "—"}`}>
-          <small>{t("Retail price")}</small>
-          <strong>{retailPrice || "—"}</strong>
+      {(showPrices || hasCardActions) && (
+        <div className={styles.footer}>
+          {showPrices && (
+            <div className={styles.retailPrice} aria-label={`${t("Retail price")}: ${retailPrice || "—"}`}>
+              <small>{t("Retail price")}</small>
+              <strong>{retailPrice || "—"}</strong>
+            </div>
+          )}
+          {hasCardActions && (
+            <div className={styles.cardActions} aria-label={t("Product links")}>
+              {websiteUrl && (
+                <a
+                  href={websiteUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={t("Open {{product}} website", { product: name })}
+                  title={t("Open product website")}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" />
+                    <path d="M4 12h16M12 4c2.2 2.2 3.4 4.9 3.4 8S14.2 17.8 12 20c-2.2-2.2-3.4-4.9-3.4-8S9.8 6.2 12 4Z" />
+                  </svg>
+                </a>
+              )}
+              {product.video && onPlay && (
+                <button
+                  type="button"
+                  aria-label={t("Play {{product}} video", { product: name })}
+                  title={t("Play product video")}
+                  onClick={(event) => onPlay(event.currentTarget)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <circle cx="12" cy="12" r="8" />
+                    <path className={styles.playGlyph} d="m10.2 8.8 5 3.2-5 3.2Z" />
+                  </svg>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </article>

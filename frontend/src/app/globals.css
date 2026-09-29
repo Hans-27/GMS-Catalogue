@@ -13,6 +13,19 @@
   --error-bg: #fff0ef;
 }
 
+:root[data-theme="dark"] {
+  --ink: var(--admin-text);
+  --muted: var(--admin-text-muted);
+  --line: var(--admin-border);
+  --surface: var(--admin-surface);
+  --canvas: var(--admin-canvas);
+  --brand: var(--admin-primary);
+  --brand-dark: var(--admin-primary-dark);
+  --accent: var(--admin-primary-soft);
+  --error: #ff8d83;
+  --error-bg: #3a2220;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -43,7 +56,7 @@ body {
   color: #526157;
   font: inherit;
   font-size: 12px;
-  font-weight: 800;
+  font-weight: 500;
   cursor: pointer;
 }
 
@@ -76,7 +89,11 @@ body {
   color: var(--ink);
   background: var(--canvas);
   font-family:
-    Inter, Aptos, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    Inter, "Segoe UI Variable", Aptos, "Segoe UI", Roboto, Helvetica, Arial,
+    sans-serif;
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
 }
 

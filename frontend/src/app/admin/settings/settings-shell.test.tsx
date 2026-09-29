@@ -1,7 +1,8 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { SettingsShell } from "./settings-shell";
 import { LanguageProvider } from "@/lib/i18n";
+import { ThemeProvider } from "@/lib/theme";
 
 const mocks = vi.hoisted(() => ({
   replace: vi.fn(), getCurrentUser: vi.fn(), getSystemMetrics: vi.fn(), getSystemInformation: vi.fn(),
@@ -27,12 +28,70 @@ describe("SuperAdmin Settings", () => {
   beforeEach(() => { window.localStorage.clear(); mocks.getCurrentUser.mockResolvedValue(user); mocks.getSystemMetrics.mockResolvedValue(metrics); mocks.getBackups.mockResolvedValue([]); mocks.createBackup.mockResolvedValue({ status: "completed" }); });
 
   it("changes and persists the language from General Settings", async () => {
-    render(<LanguageProvider><SettingsShell view="general" /></LanguageProvider>);
+    render(<ThemeProvider><LanguageProvider><SettingsShell view="general" /></LanguageProvider></ThemeProvider>);
     await screen.findByText("Languages");
     const thaiButtons = screen.getAllByRole("button", { name: "ไทย" });
     fireEvent.click(thaiButtons.at(-1)!);
     await waitFor(() => expect(window.localStorage.getItem("gms-catalogue-language")).toBe("th"));
     expect(document.documentElement.lang).toBe("th");
+  });
+
+  it("changes the management appearance from General Settings", async () => {
+    render(<ThemeProvider><LanguageProvider><SettingsShell view="general" /></LanguageProvider></ThemeProvider>);
+
+    expect(await screen.findByRole("group", { name: "Appearance" })).toBeInTheDocument();
+    const dark = screen.getByRole("button", { name: "Dark" });
+    fireEvent.click(dark);
+
+    await waitFor(() => expect(document.documentElement).toHaveAttribute("data-theme", "dark"));
+    expect(dark).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("provides and persists a separate visibility switch for every sidebar button", async () => {
+    // Production defect: General Settings has no control for hiding individual
+    // sidebar destinations, so users cannot simplify their navigation.
+    const first = render(
+      <ThemeProvider><LanguageProvider><SettingsShell view="general" /></LanguageProvider></ThemeProvider>,
+    );
+
+    const controls = await screen.findByRole("group", { name: "Sidebar navigation" });
+    const products = within(controls).getByRole("switch", { name: "Products" });
+    const catalogues = within(controls).getByRole("switch", { name: "Catalogues" });
+    expect(products).toBeChecked();
+    expect(catalogues).toBeChecked();
+    expect(within(controls).getByText("Changes save automatically on this device.")).toBeInTheDocument();
+
+    fireEvent.click(products);
+    expect(products).not.toBeChecked();
+    expect(within(controls).getByRole("status")).toHaveTextContent("Saved automatically.");
+    expect(JSON.parse(window.localStorage.getItem("gms-sidebar-hidden-items-v1") || "[]"))
+      .toContain("/dashboard?view=products");
+
+    first.unmount();
+    render(
+      <ThemeProvider><LanguageProvider><SettingsShell view="general" /></LanguageProvider></ThemeProvider>,
+    );
+    const restored = await screen.findByRole("group", { name: "Sidebar navigation" });
+    expect(within(restored).getByRole("switch", { name: "Products" })).not.toBeChecked();
+  });
+
+  it("reports when a sidebar visibility change cannot be saved", async () => {
+    const storageWrite = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("Storage is blocked");
+      });
+
+    render(
+      <ThemeProvider><LanguageProvider><SettingsShell view="general" /></LanguageProvider></ThemeProvider>,
+    );
+    const controls = await screen.findByRole("group", { name: "Sidebar navigation" });
+    fireEvent.click(within(controls).getByRole("switch", { name: "Products" }));
+
+    expect(within(controls).getByRole("status")).toHaveTextContent(
+      "Could not save on this device. Check browser storage permissions and try again.",
+    );
+    storageWrite.mockRestore();
   });
 
   it("renders protected CPU, memory, disk, uptime and database metrics", async () => {
@@ -56,7 +115,7 @@ describe("SuperAdmin Settings", () => {
       is_superadmin: false,
     });
 
-    render(<LanguageProvider><SettingsShell view="general" /></LanguageProvider>);
+    render(<ThemeProvider><LanguageProvider><SettingsShell view="general" /></LanguageProvider></ThemeProvider>);
 
     expect(await screen.findByText("SYSTEM TOOLS")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "General Settings" })).toBeInTheDocument();

@@ -148,6 +148,39 @@ def main() -> None:
                 assert public["products"][0]["online_price"] == "120.00"
                 assert public["products"][0]["retail_price"] == "110.00"
 
+            # Regression guard: unpublishing suspends the catalogue as a
+            # whole. It must not revoke or regenerate customer link records,
+            # because republishing reactivates those exact URLs.
+            normal_token = token_from(by_code["normal"])
+            original_link_urls = {
+                item["id"]: item["public_url"] for item in links
+            }
+            unpublished = ok(
+                client.post(f"/api/v1/catalogues/{catalogue_id}/unpublish")
+            )
+            assert unpublished["status"] == "draft"
+            assert unpublished["version"] == 1
+            assert unpublished["public_access_enabled"] is False
+            suspended = client.get(f"/api/v1/public/catalogues/{normal_token}")
+            assert suspended.status_code == 410, suspended.text
+            assert suspended.json()["detail"] == "This catalogue is currently unpublished."
+            suspended_links = ok(
+                client.get(f"/api/v1/catalogues/{catalogue_id}/share-links")
+            )
+            assert {
+                item["id"]: item["public_url"] for item in suspended_links
+            } == original_link_urls
+            assert all(item["status"] == "active" for item in suspended_links)
+
+            republished = ok(
+                client.post(f"/api/v1/catalogues/{catalogue_id}/publish")
+            )
+            assert republished["version_number"] == 2
+            live_again = ok(client.get(f"/api/v1/catalogues/{catalogue_id}"))
+            assert live_again["public_access_enabled"] is True
+            assert live_again["status"] == "published"
+            ok(client.get(f"/api/v1/public/catalogues/{normal_token}"))
+
             # One shared staff/customer portal account can issue separate,
             # customer-scoped links. The opaque token selects the stored
             # profile; recipients never change pricing with query parameters.
@@ -313,15 +346,52 @@ def main() -> None:
             headings = [cell.value for cell in worksheet[1]]
             assert headings == [
                 "Image", "Product code", "Product name", "Brand", "Category",
-                "Model", "Barcode", "Description", "Stock", "Price", "Currency",
+                "Model", "Barcode", "Description", "Stock", "Wholesale Price",
+                "Online Price", "Retail Price",
             ]
             assert worksheet.max_row == 2
             assert worksheet.cell(2, 2).value == product.sku
             assert worksheet.cell(2, 5).value == category["name"]
             assert worksheet.cell(2, 9).value == category_public["products"][0]["stock_quantity"]
-            assert worksheet.cell(2, 10).value == 80
+            assert worksheet.cell(2, 10).value == 90
+            assert worksheet.cell(2, 11).value == 120
+            assert worksheet.cell(2, 12).value == 110
             assert worksheet.cell(2, 9).data_type == "n"
             assert worksheet.cell(2, 10).data_type == "n"
+            assert worksheet.cell(2, 11).data_type == "n"
+            assert worksheet.cell(2, 12).data_type == "n"
+            catalogue_export = client.get(
+                f"/api/v1/public/catalogues/{token_from(brand_vip_link)}/excel",
+            )
+            assert catalogue_export.status_code == 200, catalogue_export.text
+            assert catalogue_export.headers["content-type"].startswith(
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            )
+            assert "secure-audience-catalogue.xlsx" in catalogue_export.headers["content-disposition"]
+            catalogue_workbook = load_workbook(BytesIO(catalogue_export.content))
+            catalogue_worksheet = catalogue_workbook.active
+            assert catalogue_worksheet.title == "Products"
+            assert catalogue_worksheet.max_row == 2
+            assert catalogue_worksheet.cell(2, 2).value == product.sku
+            assert catalogue_worksheet.cell(2, 5).value == category["name"]
+            assert catalogue_worksheet.cell(2, 9).value == category_public["products"][0]["stock_quantity"]
+            assert catalogue_worksheet.cell(2, 10).value == 90
+            assert catalogue_worksheet.cell(2, 11).value == 120
+            assert catalogue_worksheet.cell(2, 12).value == 110
+
+            # VVIP catalogue cards replace Wholesale Price with their selected
+            # audience price, so the spreadsheet must use the same label/value.
+            vvip_export = client.get(
+                f"/api/v1/public/catalogues/{token_from(by_code['vvip'])}/excel",
+            )
+            assert vvip_export.status_code == 200, vvip_export.text
+            vvip_worksheet = load_workbook(BytesIO(vvip_export.content)).active
+            assert [cell.value for cell in vvip_worksheet[1]][9:] == [
+                "VVIP Price", "Online Price", "Retail Price",
+            ]
+            assert [vvip_worksheet.cell(2, column).value for column in range(10, 13)] == [
+                70, 120, 110,
+            ]
             missing_category = client.get(
                 f"/api/v1/public/catalogues/{token_from(brand_vip_link)}/categories/not-a-real-category/excel",
             )
@@ -336,6 +406,10 @@ def main() -> None:
                 f"/api/v1/public/catalogues/{token_from(restricted_link)}/categories/{category['slug']}/excel",
             )
             assert restricted_export.status_code == 403
+            restricted_catalogue_export = client.get(
+                f"/api/v1/public/catalogues/{token_from(restricted_link)}/excel",
+            )
+            assert restricted_catalogue_export.status_code == 403
             ok(client.patch(
                 f"/api/v1/catalogues/{catalogue_id}/share-links/{restricted_link['id']}",
                 json={"allow_pdf_download": True},
@@ -390,7 +464,7 @@ def main() -> None:
             ok(client.put(f"/api/v1/catalogues/{catalogue_id}/products", json={"products": [{"product_id": product_id, "section_title": "Products", "override_description": "Version two description", "hide_price": False}]}))
             ok(client.post(f"/api/v1/catalogues/{catalogue_id}/publish"))
             assert ok(client.get(f"/api/v1/public/catalogues/{fixed_token}"))["version"] == 1
-            assert ok(client.get(f"/api/v1/public/catalogues/{token_from(by_code['normal'])}"))["version"] == 2
+            assert ok(client.get(f"/api/v1/public/catalogues/{token_from(by_code['normal'])}"))["version"] == 3
 
             normal = by_code["normal"]
             normal_token = token_from(normal)
@@ -426,6 +500,13 @@ def main() -> None:
                 assert stored and len(stored.token_hash) == 64 and regenerated["public_url"] not in stored.encrypted_token
                 audits = list(db.scalars(select(AuditLog).where(AuditLog.module == "catalogue_share_links")))
                 assert audits
+                assert db.scalar(
+                    select(AuditLog).where(
+                        AuditLog.module == "catalogues",
+                        AuditLog.action == "catalogue_unpublished",
+                        AuditLog.identifier == "secure-audience-catalogue",
+                    )
+                )
                 raw_tokens = {token_from(item) for item in links}
                 assert all(not any(token in str(audit.details) for token in raw_tokens) for audit in audits)
 

@@ -1352,6 +1352,7 @@ def _catalogue_response(
         valid_from=catalogue.valid_from,
         valid_until=catalogue.valid_until,
         is_public=catalogue.is_public,
+        public_access_enabled=catalogue.public_access_enabled,
         owner_id=catalogue.owner_id,
         product_count=product_count,
         products=(
@@ -2671,6 +2672,7 @@ def publish_catalogue(
     )
     catalogue.version = next_version
     catalogue.status = "published"
+    catalogue.public_access_enabled = True
     catalogue.published_by_id = actor.id
     catalogue.published_at = version.published_at
     catalogue.updated_by_id = actor.id
@@ -2692,6 +2694,45 @@ def publish_catalogue(
         _audit(db, request, actor, action="product_videos_included_in_catalogue_version", module="product_videos", identifier=catalogue.slug, details={"catalogue_id": str(catalogue.id), "version": next_version, "video_ids": [item["video"]["id"] for item in snapshot["products"] if item.get("video")]})
     db.commit()
     return CatalogueVersionResponse.model_validate(version, from_attributes=True)
+
+
+@router.post(
+    "/catalogues/{catalogue_id}/unpublish",
+    response_model=CatalogueResponse,
+)
+def unpublish_catalogue(
+    catalogue_id: uuid.UUID,
+    request: Request,
+    actor: User = Depends(require_permission("catalogues.publish")),
+    db: Session = Depends(get_db),
+) -> CatalogueResponse:
+    catalogue = _get_scoped_catalogue(db, catalogue_id, actor, "catalogues.publish")
+    if catalogue.version < 1:
+        raise HTTPException(
+            status_code=409,
+            detail="Publish at least one catalogue version before unpublishing.",
+        )
+    if not catalogue.public_access_enabled:
+        raise HTTPException(status_code=409, detail="This catalogue is already unpublished.")
+    catalogue.status = "draft"
+    catalogue.public_access_enabled = False
+    catalogue.updated_by_id = actor.id
+    catalogue.revision += 1
+    _audit(
+        db,
+        request,
+        actor,
+        action="catalogue_unpublished",
+        module="catalogues",
+        identifier=catalogue.slug,
+        details={"version": catalogue.version, "customer_links_suspended": True},
+    )
+    db.commit()
+    return _catalogue_response(
+        db,
+        _get_catalogue(db, catalogue.id),
+        actor=actor,
+    )
 
 
 @router.get(

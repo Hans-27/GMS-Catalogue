@@ -1,0 +1,22 @@
+.panel {
+  isolation: isolate;
+}
+
+.backdrop {
+  position: absolute;
+  z-index: 0;
+  inset: -14px;
+  background-position: center;
+  background-size: cover;
+  filter: blur(14px) saturate(0.9);
+  opacity: 0.72;
+  pointer-events: none;
+}
+
+.panel[data-color-extracted="true"] .backdrop {
+  opacity: 0;
+}
+
+.logo {
+  z-index: 1;
+}

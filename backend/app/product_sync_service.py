@@ -69,7 +69,7 @@ SELECT TOP {batch_size}
  NULLIF(p.Size_H, 0) AS size_height,
  NULLIF(p.GrossWeight, 0) AS gross_weight,
  NULLIF(p.NetWeight, 0) AS net_weight,
- NULLIF(p.PackSize, 0) AS pack_size,
+ NULLIF(p.CarTonsUnits, 0) AS pack_size,
  NULLIF(LTRIM(RTRIM(CONVERT(nvarchar(80), warranty_ref.Description))), N'') AS warranty_description,
  warranty_ref.WarrantyDays AS warranty_days,
  CASE WHEN LTRIM(RTRIM(COALESCE(p.Blocked, ''))) IN ('Y','1','T') THEN 1 ELSE 0 END AS is_discontinued,

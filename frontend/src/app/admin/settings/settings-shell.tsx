@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ApplicationLogo } from "@/components/application-logo";
 import { applicationBranding } from "@/lib/branding";
-import { APP_ROUTES } from "@/lib/routes";
-import { accountTypeLabel, canAccess, isSalesUser } from "@/lib/access";
+import { APP_ROUTES, SIDEBAR_GROUPS } from "@/lib/routes";
+import { accountTypeLabel, canAccess, canAccessAny, isSalesUser } from "@/lib/access";
 import {
   ApiError,
   createBackup,
@@ -25,6 +25,8 @@ import styles from "./settings.module.css";
 import { ErpSettingsView } from "./erp-settings";
 import { DataSyncSettingsView } from "./data-sync-settings";
 import { formatApiDate } from "@/lib/date-time";
+import { ThemeSelector } from "@/lib/theme";
+import { useSidebarVisibility } from "@/lib/sidebar-visibility";
 
 type View =
   | "general"
@@ -484,6 +486,10 @@ export function SettingsShell({ view }: { view: View }) {
   const [user, setUser] = useState<AuthenticatedUser | null>(null);
   const [error, setError] = useState("");
   const [info, setInfo] = useState<Record<string, string | boolean>>({});
+  const [sidebarSaveStatus, setSidebarSaveStatus] = useState<
+    "idle" | "saved" | "error"
+  >("idle");
+  const { isVisible: isSidebarItemVisible, setVisible: setSidebarItemVisible } = useSidebarVisibility();
   useEffect(() => {
     getCurrentUser()
       .then((current) => {
@@ -673,6 +679,15 @@ export function SettingsShell({ view }: { view: View }) {
                   </span>
                   <LanguageSwitcher className={styles.settingLanguageSwitcher} />
                 </div>
+                <div className={styles.appearanceSetting}>
+                  <span>
+                    <T>Appearance</T>
+                  </span>
+                  <p>
+                    <T>Choose how the management platform appears on this device.</T>
+                  </p>
+                  <ThemeSelector className={styles.themeSelector} />
+                </div>
                 <div>
                   <span>
                     <T>Storage</T>
@@ -690,6 +705,60 @@ export function SettingsShell({ view }: { view: View }) {
                   </strong>
                 </div>
               </div>
+              {permitted(user, "settings.manage") && (
+                <fieldset
+                  className={styles.sidebarVisibilitySetting}
+                  aria-label={t("Sidebar navigation")}
+                >
+                  <legend>{t("Sidebar navigation")}</legend>
+                  <p>{t("Choose which permitted buttons appear in the management sidebar on this device.")}</p>
+                  <p
+                    className={styles.sidebarAutosaveStatus}
+                    data-status={sidebarSaveStatus}
+                    role="status"
+                    aria-live="polite"
+                  >
+                    {t(
+                      sidebarSaveStatus === "saved"
+                        ? "Saved automatically."
+                        : sidebarSaveStatus === "error"
+                          ? "Could not save on this device. Check browser storage permissions and try again."
+                          : "Changes save automatically on this device.",
+                    )}
+                  </p>
+                  <div className={styles.sidebarVisibilityGroups}>
+                    {SIDEBAR_GROUPS.map((group) => {
+                      const items = group.items.filter((item) =>
+                        canAccessAny(user, item.permissions),
+                      );
+                      if (!items.length) return null;
+                      return (
+                        <section key={group.label}>
+                          <strong>{t(group.label)}</strong>
+                          {items.map((item) => (
+                            <label key={item.href}>
+                              <span>{t(item.label)}</span>
+                              <input
+                                type="checkbox"
+                                role="switch"
+                                checked={isSidebarItemVisible(item.href)}
+                                onChange={(event) => {
+                                  const saved = setSidebarItemVisible(
+                                    item.href,
+                                    event.currentTarget.checked,
+                                  );
+                                  setSidebarSaveStatus(saved ? "saved" : "error");
+                                }}
+                              />
+                              <i aria-hidden="true" />
+                            </label>
+                          ))}
+                        </section>
+                      );
+                    })}
+                  </div>
+                </fieldset>
+              )}
             </section>
           )}
           {view === "system-information" && (

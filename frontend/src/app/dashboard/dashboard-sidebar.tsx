@@ -3,11 +3,12 @@
 import Link from "next/link";
 import type { KeyboardEvent, MouseEvent } from "react";
 import { ApplicationLogo } from "@/components/application-logo";
-import { accountTypeLabel, canAccessAny, isCataloguePortalUser, isSalesUser } from "@/lib/access";
+import { accountTypeLabel, canAccessAny, isCataloguePortalUser, isSalesAdmin, isSalesUser, isSuperAdmin } from "@/lib/access";
 import type { AuthenticatedUser } from "@/lib/api";
 import { applicationBranding } from "@/lib/branding";
 import { useLanguage } from "@/lib/i18n";
 import { APP_ROUTES, SIDEBAR_GROUPS, type DashboardView, type SidebarRouteItem } from "@/lib/routes";
+import { useSidebarVisibility } from "@/lib/sidebar-visibility";
 import styles from "./dashboard.module.css";
 
 type NavigationItem = readonly [DashboardView, string, string];
@@ -83,20 +84,24 @@ export function DashboardSidebar({
   onCloseMobile,
 }: Props) {
   const { t } = useLanguage();
+  const { isVisible } = useSidebarVisibility();
   const salesOnly = isSalesUser(user);
   const cataloguePortalOnly = isCataloguePortalUser(user);
+  const hideSystemTools = !isSuperAdmin(user) && (cataloguePortalOnly || isSalesAdmin(user));
   const hasOverview = !cataloguePortalOnly && navigationItems.some(([view]) => view === "overview");
   const allowedViews = new Set(navigationItems.map(([view]) => view));
-  const visibleGroups = SIDEBAR_GROUPS.map((group) => ({
+  const visibleGroups = SIDEBAR_GROUPS
+    .filter((group) => !(hideSystemTools && group.label === "System"))
+    .map((group) => ({
     ...group,
     items: group.items.filter(
       (item) =>
         canAccessAny(user, item.permissions) &&
+        isVisible(item.href) &&
         (!item.dashboardView || allowedViews.has(item.dashboardView)) &&
         (!salesOnly ||
           item.dashboardView === "catalogues" ||
-          item.href === APP_ROUTES.productCards ||
-          group.label === "System"),
+          item.href === APP_ROUTES.productCards),
     ),
   })).filter((group) => group.items.length > 0);
 
